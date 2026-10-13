@@ -102,6 +102,21 @@ def test_followup_compare(result, data):
     assert {r["iso3"] for r in out2["rows"]} == {"USA", "DEU"}
 
 
+def test_run_with_explicit_profile_skips_rederivation(result, data):
+    """界面已选定品类时，run 不得从文字重新推导（节日派对用品 bug 的回归测试）。"""
+    wb, cty = data
+    from luopan.profile import build_profile
+    cty = cty + [{"hs6": "950510", "reporter": 842, "year": 2023, "partner": 0,
+                  "flow": "M", "value_usd": 100.0, "net_wgt": None}]
+    prof = build_profile("节日派对用品，中端定位", hs6="950510")
+    llm = FakeLlm(["计划", "点评"])
+    r = MarketAgent(llm=llm, wb_records=wb, cty_records=cty).run(
+        "节日派对用品，中端定位", profile=prof)
+    assert r.error is None
+    assert r.profile.hs6 == "950510"
+    assert "界面已选定" in r.trace[1]["observation"]
+
+
 def test_followup_explain_needs_no_llm(result, data):
     wb, cty = data
     agent = MarketAgent(llm=None, wb_records=wb, cty_records=cty)  # 不注入 LLM 也能解释

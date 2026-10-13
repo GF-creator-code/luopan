@@ -122,7 +122,8 @@ class MarketAgent:
         n = len({r.get("reporter") for r in rows if r.get("partner") == 0})
         return n, sorted({r.get("year") for r in rows})
 
-    def run(self, text, weights=None, top_n=5, on_step=None, region_iso3s=None):
+    def run(self, text, weights=None, top_n=5, on_step=None, region_iso3s=None,
+            profile=None):
         trace = []
 
         def step(action, detail, observation):
@@ -145,13 +146,18 @@ class MarketAgent:
             step("plan", text, "LLM 计划失败，改用默认计划: {}".format(e))
         step("plan", text, plan)
 
-        # 2 品类定位
-        prof = build_profile(text, use_llm=True)
-        if prof is None:
-            step("map_hs_code", text, "校对表与 LLM 均未能确定 HS6，需要用户手选")
-            return AgentResult(text, None, w, None, trace, error="无法确定品类，请手选 6 位 HS 编码")
-        step("map_hs_code", text, "{} → {}（{}，{}）".format(
-            text, prof.hs6, prof.hs_name_zh or "自定义品类", prof.matched_by))
+        # 2 品类定位（profile 由界面/调用方传入时直接采用，不再从文字重推）
+        if profile is not None:
+            prof = profile
+            step("map_hs_code", text, "界面已选定 HS{}（{}）".format(prof.hs6, prof.matched_by))
+        else:
+            prof = build_profile(text, use_llm=True)
+            if prof is None:
+                step("map_hs_code", text, "校对表与 LLM 均未能确定 HS6，需要用户手选")
+                return AgentResult(text, None, w, None, trace,
+                                   error="无法确定品类，请手选 6 位 HS 编码")
+            step("map_hs_code", text, "{} → {}（{}，{}）".format(
+                text, prof.hs6, prof.hs_name_zh or "自定义品类", prof.matched_by))
 
         # 3 数据覆盖
         rows = [r for r in cty if r.get("hs6") == prof.hs6]

@@ -158,7 +158,7 @@ if go:
             result = MarketAgent().run(
                 run_text, weights=weights, on_step=lambda s: st.markdown(
                     "**`[{}]`** {}".format(s["action"], s["observation"])),
-                region_iso3s=region_iso3s)
+                region_iso3s=region_iso3s, profile=prof)
             status.update(label="✅ 分析完成（{} 个市场已评分）".format(len(result.ranking or [])),
                           state="complete", expanded=False)
         st.session_state["result"] = result
