@@ -153,7 +153,7 @@ class MarketAgent:
             plan = self._ensure_llm().chat([
                 {"role": "system", "content": "你是出海市场调研Agent。用一句话（不超过40字）说明你将如何为目标产品筛选出海目标市场，直接输出这句话。"},
                 {"role": "user", "content": text},
-            ], max_tokens=100).strip().splitlines()[0][:80]
+            ], max_tokens=2000).strip().splitlines()[0][:80]
         except Exception as e:
             step("plan", text, "LLM 计划失败，改用默认计划: {}".format(e))
         step("plan", text, plan)
@@ -223,7 +223,7 @@ class MarketAgent:
                 "产品：{}\nHS编码：{}\n\n评分数据（数字只能从这里引用）：\n{}\n\n"
                 "数据解读参考（判断可化用，语句自己组织，不要照抄）：\n{}\n\n{}").format(
                 product_text, hs6, facts, "\n".join(ev_lines), _ANALYST_ASK)},
-        ], max_tokens=1200).strip()
+        ], max_tokens=3000).strip()
         guard_bad = guard_check(answer, build_ledger(facts, product_text, hs6,
                                                      *(r["total"] for r in ranked)))
         return answer, guard_bad
@@ -280,7 +280,7 @@ class MarketAgent:
                     {"role": "system", "content": ANALYST_SYSTEM},
                     {"role": "user", "content": "产品：{}\n仅看{}市场的评分（子池内重新归一化）:\n{}\n用2-3句点评。".format(
                         result.text, region, facts)},
-                ], max_tokens=500).strip()
+                ], max_tokens=2000).strip()
                 bad = guard_check(answer, build_ledger(facts, result.text, *(r["total"] for r in sub)))
             except Exception as e:
                 answer = "（LLM 点评失败: {}）".format(e)
@@ -302,7 +302,7 @@ class MarketAgent:
                 answer = self._ensure_llm().chat([
                     {"role": "system", "content": ANALYST_SYSTEM},
                     {"role": "user", "content": "对比这两个市场，给出选择建议：\n{}\n注意：子项分数含义=规模/增速/中国份额/购买力/数字渠道/物流。".format(facts)},
-                ], max_tokens=500).strip()
+                ], max_tokens=2000).strip()
                 bad = guard_check(answer, build_ledger(facts, result.text))
             except Exception as e:
                 answer = "（LLM 对比失败: {}）".format(e)
@@ -323,7 +323,7 @@ class MarketAgent:
             answer = self._ensure_llm().chat([
                 {"role": "system", "content": ANALYST_SYSTEM},
                 {"role": "user", "content": "产品：{}\n评分材料:\n{}\n问题：{}".format(result.text, facts, q)},
-            ], max_tokens=500).strip()
+            ], max_tokens=2000).strip()
             bad = guard_check(answer, build_ledger(facts, result.text))
         except Exception as e:
             answer = "（LLM 回答失败: {}）".format(e)

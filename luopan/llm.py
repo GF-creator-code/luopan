@@ -92,7 +92,8 @@ class LlmClient:
             return content
         raise LlmError("连续失败: {}".format(last))
 
-    def chat(self, messages, temperature=0.0, max_tokens=2000):
+    def chat(self, messages, temperature=0.0, max_tokens=4000):
+        # 默认 4000：deepseek-v4-pro 等推理模型会先消耗推理 token 再输出正文
         try:
             return self._post_chat(self.base, self.key, self.model,
                                    messages, temperature, max_tokens)

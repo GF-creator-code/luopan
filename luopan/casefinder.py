@@ -136,7 +136,7 @@ def research_cases(profile, ranked, llm, price_tier="mid", search_client=None):
     ) + _snippets_block(snippets)
 
     text = llm.chat([{"role": "system", "content": _SYSTEM},
-                     {"role": "user", "content": prompt}], max_tokens=1500)
+                     {"role": "user", "content": prompt}], max_tokens=3000)
     return _normalize(_extract_json_array(text)), {"snippets": snippets,
                                                    "mode": _mode_of(search_client)}
 

@@ -97,7 +97,7 @@ def llm_map_product(text, llm=None):
     )
     data = _extract_json_object(llm.chat(
         [{"role": "system", "content": _MAP_SYSTEM},
-         {"role": "user", "content": prompt}], max_tokens=1200))
+         {"role": "user", "content": prompt}], max_tokens=4000))
     if not data:
         return None
     components = []
