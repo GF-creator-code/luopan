@@ -28,6 +28,8 @@ HS_TABLE = [
     (("玩具", "toy"), "950300"),
     (("笔记本电脑", "笔记本", "laptop", "平板电脑"), "847130"),
     (("智能手表", "手环", "smartwatch", "smart watch"), "851762"),
+    (("胶片冲洗", "冲洗机", "暗房设备", "显影"), "901010"),
+    (("翻拍", "片夹", "拷贝台", "负片支架", "观片器"), "901090"),
 ]
 
 
@@ -40,6 +42,15 @@ def lookup_hs6(text):
         if hits > best_hits:
             best, best_hits = hs6, hits
     return best
+
+
+def _code_from_text(content):
+    """从 LLM 输出提取编码：优先 6 位；只有 4 位章标题时补 00。"""
+    m = re.search(r"\d{6}", content)
+    if m:
+        return m.group(0)
+    m = re.search(r"\d{4}", content)
+    return m.group(0) + "00" if m else None
 
 
 def llm_lookup_hs6(text):
@@ -66,14 +77,15 @@ def llm_lookup_hs6(text):
                 "temperature": 0,
                 "messages": [{
                     "role": "user",
-                    "content": "把产品描述映射到中国海关 6 位 HS 编码，只输出 6 位数字，不要解释。\n产品描述：" + (text or ""),
+                    "content": ("把产品映射到中国海关 6 位 HS 细分编码，只输出 6 位数字，"
+                                "不要解释。组合套件/多部件产品按其核心功能部件归类；"
+                                "摄影暗房/翻拍/冲洗器材在第 90 或 37 章。\n产品描述：" + (text or "")),
                 }],
             },
             timeout=30,
         )
         content = resp.json()["choices"][0]["message"]["content"].strip()
-        m = re.search(r"\d{6}", content)
-        return m.group(0) if m else None
+        return _code_from_text(content)
     except Exception:
         return None
 

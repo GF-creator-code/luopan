@@ -51,3 +51,19 @@ def test_build_profile_failures():
     assert build_profile("x", hs6="1234567") is None  # 非 6 位
     with pytest.raises(ValueError):
         build_profile("玩具", price_tier="超高端")
+
+
+def test_film_photography_keywords():
+    """胶片摄影/暗房器材关键词（用户实际案例：翻拍+冲洗设备）。"""
+    from luopan.profile import build_profile
+    assert lookup_hs6("胶片半自动式冲洗设备") == "901010"
+    assert lookup_hs6("胶片翻拍片夹与翻拍光源") == "901090"
+    p = build_profile("胶片翻拍设备，含片夹与光源")
+    assert p is not None and p.hs6 == "901090"
+
+
+def test_code_from_text_padding():
+    from luopan.profile import _code_from_text
+    assert _code_from_text("HS 编码是 901090") == "901090"
+    assert _code_from_text("应归入第 9010 章") == "901000"   # 4 位章标题补 00
+    assert _code_from_text("无法归类") is None

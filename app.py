@@ -162,7 +162,15 @@ if go:
         prof = build_profile(run_text, hs6=hs6, price_tier=TIER_CODE[tier],
                              use_llm=True)
         if prof is None:
-            st.error("无法确定产品品类（HS 编码），请把描述写得更具体些")
+            manual = st.text_input(
+                "AI 未能自动识别该品类：请手填 6 位 HS 编码（可查海关税则，如翻拍/冲洗器材填 901090/901010）",
+                key="manual_hs6")
+            st.caption("填好后再次点击「🚀 开始分析」即可继续；也可以改从目录选择。")
+            if manual.strip():
+                prof = build_profile(run_text, hs6=manual.strip(),
+                                     price_tier=TIER_CODE[tier])
+        if prof is None:
+            st.error("无法确定产品品类（HS 编码）：请在上方手填 6 位编码，或改从目录选择")
             st.stop()
         agent = MarketAgent()
         n, _years = agent.coverage(prof.hs6)
