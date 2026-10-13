@@ -11,6 +11,7 @@ import streamlit as st
 
 from luopan import cache as _cache
 from luopan import comtrade, config
+from luopan import assets
 from luopan.agent import MarketAgent
 from luopan.casefinder import find_cases_cached
 from luopan.cases import alignment, cases_for
@@ -20,8 +21,9 @@ from luopan.llm import LlmError
 from luopan.profile import build_profile, smart_build_profile
 from luopan.scoring import Weights
 
-st.set_page_config(page_title="出海罗盘", page_icon="🧭", layout="wide",
+st.set_page_config(page_title="出海罗盘 · GlobalCompass", page_icon="🧭", layout="wide",
                    initial_sidebar_state="expanded")
+assets.inject_shell()
 
 ACCESS_CODE = os.environ.get("ACCESS_CODE", "").strip()
 if ACCESS_CODE:
@@ -64,7 +66,7 @@ with st.sidebar:
 st.title("🧭 出海罗盘")
 st.markdown("三步选出你的出海目标市场：**选品类 → 调偏好 → 看依据**。")
 
-st.markdown("### ① 描述你的产品（大类 → 细分品类）")
+assets.section_header(st, "input", "① 描述你的产品", "大类 → 细分品类，选择即可；未缓存的细分品类首次分析自动联网抓取数据")
 col_a, col_b = st.columns(2)
 big = col_a.selectbox("大类", list(config.CATEGORY_TREE) + [OTHER_LABEL], key="big_cat")
 if big == OTHER_LABEL:
@@ -79,6 +81,10 @@ else:
     sub_name = col_b.selectbox("细分品类", sub_names, key="sub_cat")
     sub_item = next(x for x in config.CATEGORY_TREE[big] if x["name"] == sub_name)
     desc = st.text_input("补充卖点或约束（可选，用于分析师点评）", key="input_text")
+    st.markdown(assets.banner_html(
+        big, sub_item["name"],
+        "HS {} ｜ 「{}」价位口径，可在下方调整区域与权重".format(sub_item["hs6"], tier)),
+        unsafe_allow_html=True)
 
 # 价位段：币种 → 参考零售价 → 明确标准（按大类分别设定）
 col_c, col_d = st.columns(2)
@@ -253,12 +259,13 @@ with tab_result:
     c2.bar_chart(df.set_index("市场")["总分"].head(10), height=420,
                  use_container_width=True)
 
-    st.markdown("### 六维画像（强项弱项一眼看清）")
-    st.caption("每个雷达是该市场六项得分的 0-10 画像：越外扩越强。"
-               "维度＝规模 / 增速 / 中国份额 / 购买力 / 数字渠道 / 物流。")
+    assets.section_header(st, "radar", "六维画像",
+                          "每个雷达是该市场六项得分的 0-10 画像：越外扩越强（规模/增速/中国份额/购买力/数字渠道/物流）")
+    st.pyplot(radar_small_multiples(result.ranking, 5))
     st.pyplot(radar_small_multiples(result.ranking, 5))
 
-    st.markdown("### 为什么是这些市场？（逐市场依据）")
+    assets.section_header(st, "evidence", "为什么是这些市场？",
+                          "逐市场依据卡：确定性规则直接从原始数据生成，零 LLM，每个数字可溯源复算")
     st.caption("依据由确定性规则直接从原始数据生成（零 LLM），每个数字都可溯源复算。")
     evidence = st.session_state.get("evidence") or evidence_for(result.ranking)
     for i, card in enumerate(evidence):
@@ -277,7 +284,8 @@ with tab_result:
             for reason in card["reasons"]:
                 st.markdown("- " + reason)
 
-    st.markdown("### 案例佐证（AI 发现相近品牌 + 可复制路径）")
+    assets.section_header(st, "case", "真实案例佐证",
+                          "相近品类/品牌的公开出海事实 + 与我们排名的自动对照（检索 2026-10）")
     tier_now = st.session_state.get("tier", "中端")
     rank_of = {r["iso3"]: (r["rank"], r["name_zh"]) for r in result.ranking}
     with st.spinner("AI 案例研究员工作中（联网抓取素材 → 生成案例）…首次约 30 秒，同输入已缓存"):
@@ -340,9 +348,8 @@ with tab_result:
                     if parts:
                         st.info("ℹ 其余主攻市场：{}".format(parts))
 
-    st.markdown("### 分析师点评")
-    st.caption("通俗多维度解读（结论/好在哪/要小心什么/第一步）；数字只允许来自上表并经台账守卫核验，"
-               "解读观点供决策参考。")
+    assets.section_header(st, "comment", "分析师点评",
+                          "通俗多维度解读；数字只允许来自上表并经台账守卫核验，解读观点供决策参考")
     if result.summary:
         st.markdown(result.summary)
         if result.guard_warnings:
@@ -360,8 +367,8 @@ with tab_result:
         else:
             st.error("重试失败：{}".format(err))
 
-    st.markdown("### 💬 继续追问")
-    st.caption("基于当前评分结果继续提问，**追问次数不限**；回答中的数字同样经台账守卫核验。")
+    assets.section_header(st, "chat", "继续追问",
+                          "基于当前评分结果继续提问，次数不限；回答中的数字同样经台账守卫核验")
     if "msgs" not in st.session_state:
         st.session_state["msgs"] = []
     QUICK = st.session_state.get("quick_qs") or [
@@ -434,3 +441,8 @@ LLM 只负责计划、品类映射与叙事，其输出中的每个数字都要�
 - **购买力**与价位段匹配（高端产品应上调其权重，经济型应下调——试试侧栏的"应用价位建议权重"）；
 - **数字渠道 + 物流**回答"跨境卖货的履约基础行不行"。
 """)
+
+st.markdown('<div style="margin-top:28px;padding:14px 18px;border-top:1px solid #E5EAF2;'
+            'color:#8A94A6;font-size:0.8rem">数据来源：世界银行 WDI · UN Comtrade ｜ '
+            '评分与排名由确定性代码生成、可复算；AI 文本经数字台账守卫核验 ｜ '
+            '本工具输出供决策参考，不构成投资或经营建议</div>', unsafe_allow_html=True)
