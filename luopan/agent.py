@@ -210,6 +210,30 @@ class MarketAgent:
         return AgentResult(text, prof, w, ranked, trace, summary=summary,
                            guard_warnings=guard_bad, narrative_error=narrative_error)
 
+    def suggest_questions(self, result):
+        """按本次结果生成 3 个追问建议（每个 ≤18 字，具体到结果里的市场/数字）；
+        失败时返回默认三问。"""
+        fallback = ["如果只看东南亚还有哪些机会？", "第一名和第二名对比一下，选哪个？",
+                    "中国份额是什么意思？"]
+        try:
+            top3 = "、".join("{}（{}分）".format(r["name_zh"], r["total"])
+                             for r in result.ranking[:3])
+            raw = self._ensure_llm().chat([
+                {"role": "system", "content": "你是出海顾问。基于评分结果设计 3 个用户最可能"
+                                              "追问的短问题：每个不超过 18 个字，要具体到结果里"
+                                              "的市场名、数字或维度，不要泛泛而谈。"
+                                              "只输出 JSON 字符串数组，不要其他文字。"},
+                {"role": "user", "content": "产品：{}\nTop3：{}".format(result.text, top3)},
+            ], max_tokens=800).strip()
+            m = re.search(r"\[", raw)
+            data = json.JSONDecoder().raw_decode(raw[m.start():])[0] if m else []
+            qs = [str(x).strip() for x in data if str(x).strip()][:3]
+        except Exception:
+            return fallback
+        while len(qs) < 3:
+            qs.append(fallback[len(qs)])
+        return qs
+
     def _analyst_call(self, product_text, hs6, ranked, price_tier, facts):
         """生成通俗多维度点评；返回 (answer, guard_bad)。"""
         evidence = evidence_for(ranked, price_tier or "mid")[:3]

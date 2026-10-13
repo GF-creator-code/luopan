@@ -204,6 +204,8 @@ if go:
         st.session_state["evidence"] = evidence_for(result.ranking, TIER_CODE[tier]) \
             if result.ranking else []
         st.session_state["msgs"] = []
+        with st.spinner("生成追问建议…"):
+            st.session_state["quick_qs"] = MarketAgent().suggest_questions(result)
     except LlmError as e:
         st.error("LLM 调用失败：{}".format(e))
 
@@ -359,11 +361,12 @@ with tab_result:
             st.error("重试失败：{}".format(err))
 
     st.markdown("### 💬 继续追问")
-    st.caption("基于当前评分结果继续提问；回答中的数字同样经台账守卫核验。")
+    st.caption("基于当前评分结果继续提问，**追问次数不限**；回答中的数字同样经台账守卫核验。")
     if "msgs" not in st.session_state:
         st.session_state["msgs"] = []
-    QUICK = ["如果只看东南亚还有哪些机会？", "第一名和第二名对比一下，选哪个？",
-             "中国份额是什么意思？"]
+    QUICK = st.session_state.get("quick_qs") or [
+        "如果只看东南亚还有哪些机会？", "第一名和第二名对比一下，选哪个？",
+        "中国份额是什么意思？"]
     qcols = st.columns(3)
 
     def _ask(text_q):
