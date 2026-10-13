@@ -31,8 +31,6 @@ if ACCESS_CODE:
         st.stop()
 
 OTHER_LABEL = "🔍 其他品类（AI 自动识别 HS 编码）"
-PRESET_LABELS = {"{}（HS {}）".format(m["name_zh"], hs6): hs6
-                 for hs6, m in config.HS_PRESETS.items()}
 TIER_CODE = {"经济型": "low", "中端": "mid", "高端": "high"}
 TIER_SUGGEST = {  # 价位段建议权重（%），滑条可再微调
     "经济型": {"scale": 30, "growth": 25, "china_affinity": 20,
@@ -66,17 +64,38 @@ with st.sidebar:
 st.title("🧭 出海罗盘")
 st.markdown("三步选出你的出海目标市场：**选品类 → 调偏好 → 看依据**。")
 
-st.markdown("### ① 描述你的产品（选择即可）")
-col_a, col_b = st.columns([3, 2])
-cat_label = col_a.selectbox("产品品类", list(PRESET_LABELS) + [OTHER_LABEL])
-tier = col_b.selectbox("价位段", list(TIER_CODE), index=1)
-
-if cat_label == OTHER_LABEL:
-    desc = st.text_area("请用一句话描述产品（AI 自动映射 6 位 HS 编码）",
+st.markdown("### ① 描述你的产品（大类 → 细分品类）")
+col_a, col_b = st.columns(2)
+big = col_a.selectbox("大类", list(config.CATEGORY_TREE) + [OTHER_LABEL], key="big_cat")
+if big == OTHER_LABEL:
+    sub_item = None
+    tier = col_b.selectbox("价位段", list(TIER_CODE), index=1)
+    desc = st.text_area("请描述产品（AI 自动映射 6 位 HS 编码）",
                         key="input_text", height=72,
                         placeholder="例如：空气炸锅，家用大容量")
 else:
+    sub_names = [x["name"] for x in config.CATEGORY_TREE[big]]
+    if st.session_state.get("sub_cat") not in sub_names:
+        st.session_state.pop("sub_cat", None)  # 大类切换后旧细分失效，回默认
+    sub_name = col_b.selectbox("细分品类", sub_names, key="sub_cat")
+    sub_item = next(x for x in config.CATEGORY_TREE[big] if x["name"] == sub_name)
+    tier = col_b.selectbox("价位段", list(TIER_CODE), index=1, key="tier_pick")
     desc = st.text_input("补充卖点或约束（可选，用于分析师点评）", key="input_text")
+
+EX_SAMPLES = [("厨房与家居电器", "咖啡机（便携/户外）", "☕ 咖啡机"),
+              ("厨房与家居电器", "扫地机器人/吸尘器", "🤖 扫地机器人"),
+              ("智能宠物", "宠物智能用品（喂食器/饮水机）", "🐾 宠物智能")]
+
+
+def _set_sample(big_name, sub_name):
+    st.session_state["big_cat"] = big_name
+    st.session_state["sub_cat"] = sub_name
+
+
+ex_cols = st.columns(len(EX_SAMPLES))
+for i, (bn, sn, label) in enumerate(EX_SAMPLES):
+    ex_cols[i].button(label, key="ex{}".format(i), on_click=_set_sample,
+                      args=(bn, sn), use_container_width=True)
 
 region_sel = st.multiselect("② 区域偏好（可多选；不选 = 全球 21 个候选市场）",
                             list(config.REGIONS))
@@ -111,12 +130,15 @@ def fetch_missing(hs6, years, progress=None):
 
 
 if go:
-    hs6 = PRESET_LABELS.get(cat_label)
-    run_text = desc.strip() if cat_label == OTHER_LABEL else \
-        "{}，{}定位".format(cat_label.split("（")[0], tier)
-    if cat_label == OTHER_LABEL and not run_text:
-        st.error("选择了「其他品类」，请先填写产品描述")
-        st.stop()
+    if big == OTHER_LABEL:
+        hs6 = None
+        run_text = desc.strip()
+        if not run_text:
+            st.error("选择了「其他品类」，请先填写产品描述")
+            st.stop()
+    else:
+        hs6 = sub_item["hs6"]
+        run_text = "{}，{}定位".format(sub_item["name"], tier)
     try:
         prof = build_profile(run_text, hs6=hs6, price_tier=TIER_CODE[tier],
                              use_llm=True)
