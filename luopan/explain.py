@@ -105,7 +105,7 @@ def _context_reasons(r, ranked):
     if raw.get("tariff") is not None:
         med = _median(tariffs)
         if med is not None and raw["tariff"] > med:
-            out.append("⚠ 关税提示：制成品平均关税 **{:.1f}%**，高于候选市场中位数"
+            out.append("关税提示：制成品平均关税 **{:.1f}%**，高于候选市场中位数"
                        "（{:.1f}%），需按具体税则复核成本".format(raw["tariff"], med))
         else:
             out.append("制成品平均关税 **{:.1f}%**，不高于候选市场中位数，成本风险常规".format(
@@ -147,7 +147,7 @@ def evidence_for(ranked, price_tier="mid"):
                 raw["logistics"], "顺畅" if raw["logistics"] >= 3.5 else "一般"))
         reasons.extend(_context_reasons(r, ranked))
         if r["imputed"]:
-            reasons.append("⚠ 以下维度数据缺失按中位数回填：{}".format(
+            reasons.append("注意：以下维度数据缺失按中位数回填：{}".format(
                 "、".join(_DIM_CN[d] for d in r["imputed"])))
 
         top_dims = sorted(r["sub"].items(), key=lambda kv: -kv[1])[:2]

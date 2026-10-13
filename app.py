@@ -32,7 +32,7 @@ if ACCESS_CODE:
         st.sidebar.warning("请输入访问码（评审账号）后使用。")
         st.stop()
 
-OTHER_LABEL = "🔍 其他品类（AI 自动识别 HS 编码）"
+OTHER_LABEL = "其他品类（AI 自动识别 HS 编码）"
 TIER_CODE = {"经济型": "low", "中端": "mid", "高端": "high"}
 TIER_SUGGEST = {  # 价位段建议权重（%），滑条可再微调
     "经济型": {"scale": 30, "growth": 25, "china_affinity": 20,
@@ -45,7 +45,7 @@ TIER_SUGGEST = {  # 价位段建议权重（%），滑条可再微调
 
 # ---------- 侧栏：权重工作台 ----------
 with st.sidebar:
-    st.markdown("## 🧭 出海罗盘")
+    st.markdown("## 出海罗盘")
     st.caption("AI Agent · 出海目标市场决策")
     st.divider()
     st.markdown("### 评分权重（%）")
@@ -63,8 +63,6 @@ with st.sidebar:
     st.caption("**可信度**\n\n评分 100% 确定性代码可复算；LLM 叙事经数字台账守卫核验")
 
 # ---------- 主区：选择式产品输入 ----------
-st.title("🧭 出海罗盘")
-st.markdown("三步选出你的出海目标市场：**选品类 → 调偏好 → 看依据**。")
 
 assets.section_header(st, "input", "① 描述你的产品", "大类 → 细分品类，选择即可；未缓存的细分品类首次分析自动联网抓取数据")
 col_a, col_b = st.columns(2)
@@ -80,10 +78,11 @@ else:
         st.session_state.pop("sub_cat", None)  # 大类切换后旧细分失效，回默认
     sub_name = col_b.selectbox("细分品类", sub_names, key="sub_cat")
     sub_item = next(x for x in config.CATEGORY_TREE[big] if x["name"] == sub_name)
-    desc = st.text_input("补充卖点或约束（可选，用于分析师点评）", key="input_text")
+    desc = st.text_input("补充卖点或约束（可选，用于分析师点评）", key="input_text",
+                    placeholder="例如：主打大容量与易清洁，走线上精品路线")
     st.markdown(assets.banner_html(
         big, sub_item["name"],
-        "HS {} ｜ 「{}」价位口径，可在下方调整区域与权重".format(sub_item["hs6"], tier)),
+        "HS {} ｜ 可在下方调整价位、区域与权重".format(sub_item["hs6"])),
         unsafe_allow_html=True)
 
 # 价位段：币种 → 参考零售价 → 明确标准（按大类分别设定）
@@ -95,19 +94,19 @@ price = col_d.number_input("参考零售价（可选，填了自动判定位）"
 tier_big = "消费电子" if big == OTHER_LABEL else big
 if price > 0:
     tier = config.band_label_at(tier_big, price, cur_code)
-    st.caption("💰 已按零售价自动判定位：**{}**（{}，{} 口径）".format(
+    st.caption("已按零售价自动判定位：**{}**（{}，{} 口径）".format(
         tier, config.band_range_text(tier_big, tier, cur_code), currency))
 else:
     tier_opts = ["{}（{}）".format(l, config.band_range_text(tier_big, l, cur_code))
                  for l in ("经济型", "中端", "高端")]
     tier = col_d.selectbox("价位段（{} 口径标准）".format(tier_big),
                            tier_opts, index=1).split("（")[0]
-st.caption("📏 价位标准按「{}」品类分别设定（美元零售价惯例）；人民币显示按 1 USD ≈ {} CNY 换算。".format(
+st.caption("价位标准按「{}」品类分别设定（美元零售价惯例）；人民币显示按 1 USD ≈ {} CNY 换算。".format(
     tier_big, config.FX_RATE_CNY))
 
-EX_SAMPLES = [("厨房与家居电器", "咖啡机（便携/户外）", "☕ 咖啡机"),
-              ("厨房与家居电器", "扫地机器人/吸尘器", "🤖 扫地机器人"),
-              ("智能宠物", "宠物智能用品（喂食器/饮水机）", "🐾 宠物智能")]
+EX_SAMPLES = [("厨房与家居电器", "咖啡机（便携/户外）", "咖啡机"),
+              ("厨房与家居电器", "扫地机器人/吸尘器", "扫地机器人"),
+              ("智能宠物", "宠物智能用品（喂食器/饮水机）", "宠物智能")]
 
 
 def _set_sample(big_name, sub_name):
@@ -115,7 +114,7 @@ def _set_sample(big_name, sub_name):
     st.session_state["sub_cat"] = sub_name
 
 
-st.caption("💡 不知道选什么？点一个示例，会自动帮你填好上面的「大类」和「细分品类」：")
+st.caption("不知道选什么？点一个示例，会自动帮你填好上面的「大类」和「细分品类」：")
 ex_cols = st.columns(len(EX_SAMPLES))
 for i, (bn, sn, label) in enumerate(EX_SAMPLES):
     ex_cols[i].button(label, key="ex{}".format(i), on_click=_set_sample,
@@ -131,10 +130,10 @@ def _apply_tier(tier_name):
         st.session_state["w_" + en] = v
 
 
-st.button("⚖ 应用「{}」价位建议权重（侧栏滑条会自动更新）".format(tier),
+st.button("应用「{}」价位建议权重（侧栏滑条会自动更新）".format(tier),
           on_click=_apply_tier, args=(tier,))
 
-go = st.button("🚀 开始分析", type="primary", use_container_width=True)
+go = st.button("开始分析", type="primary", use_container_width=True)
 
 
 def fetch_missing(hs6, years, progress=None):
@@ -168,7 +167,7 @@ if go:
         if big == OTHER_LABEL:
             prof, mapinfo = smart_build_profile(run_text, price_tier=TIER_CODE[tier])
             if mapinfo.get("components"):
-                with st.expander("🧠 AI 拆解匹配过程（{} 个部件）".format(
+                with st.expander("AI 拆解匹配过程（{} 个部件）".format(
                         len(mapinfo["components"])), expanded=True):
                     if mapinfo.get("rationale"):
                         st.caption(mapinfo["rationale"])
@@ -176,14 +175,14 @@ if go:
                         st.markdown("- **{}** → `{}` — {}".format(
                             comp["name"], comp["hs6"], comp.get("why", "")))
                 if mapinfo.get("major"):
-                    st.caption("📁 已归位品类目录：**{}**".format(mapinfo["major"]))
+                    st.caption("已归位品类目录：**{}**".format(mapinfo["major"]))
         else:
             prof = build_profile(run_text, hs6=hs6, price_tier=TIER_CODE[tier])
         if prof is None:
             manual = st.text_input(
                 "AI 未能自动识别该品类：请手填 6 位 HS 编码（可查海关税则，如翻拍/冲洗器材填 901090/901010）",
                 key="manual_hs6")
-            st.caption("填好后再次点击「🚀 开始分析」即可继续；也可以改从目录选择。")
+            st.caption("填好后再次点击「开始分析」即可继续；也可以改从目录选择。")
             if manual.strip():
                 prof = build_profile(run_text, hs6=manual.strip(),
                                      price_tier=TIER_CODE[tier])
@@ -198,12 +197,12 @@ if go:
         region_iso3s = None
         if region_sel:
             region_iso3s = {iso3 for rgn in region_sel for iso3 in config.REGIONS[rgn]}
-        with st.status("🧭 Agent 运行中…", expanded=True) as status:
+        with st.status("Agent 运行中…", expanded=True) as status:
             result = MarketAgent().run(
                 run_text, weights=weights, on_step=lambda s: st.markdown(
                     "**`[{}]`** {}".format(s["action"], s["observation"])),
                 region_iso3s=region_iso3s, profile=prof)
-            status.update(label="✅ 分析完成（{} 个市场已评分）".format(len(result.ranking or [])),
+            status.update(label="分析完成（{} 个市场已评分）".format(len(result.ranking or [])),
                           state="complete", expanded=False)
         st.session_state["result"] = result
         st.session_state["tier"] = tier
@@ -218,7 +217,7 @@ if go:
 # ---------- 结果 ----------
 result = st.session_state.get("result")
 if result is None:
-    st.info("← 选好产品后点「🚀 开始分析」")
+    st.info("← 选好产品后点「开始分析」")
     st.stop()
 if result.error:
     st.error(result.error)
@@ -227,11 +226,11 @@ if not result.ranking:
     st.error("所选区域内没有候选市场数据")
     st.stop()
 if result.guard_warnings:
-    st.warning("⚠️ 数字守卫警告（以下数字未在台账中，可能为模型推算）：{}".format(result.guard_warnings))
+    st.warning("数字守卫警告（以下数字未在台账中，可能为模型推算）：{}".format(result.guard_warnings))
 
 top = result.ranking[0]
 m1, m2, m3, m4 = st.columns(4)
-m1.metric("🥇 首选市场", top["name_zh"], "总分 {:.2f}".format(top["total"]))
+m1.metric("首选市场", top["name_zh"], "总分 {:.2f}".format(top["total"]))
 m2.metric("首选市场进口规模", "{:.2f} 亿美元".format((top["raw"]["scale"] or 0) / 1e8),
           "{} 年进口".format(top["raw"]["scale_year"]))
 m3.metric("首选市场中国份额",
@@ -239,7 +238,7 @@ m3.metric("首选市场中国份额",
 m4.metric("已评分市场", "{} 个".format(len(result.ranking)))
 
 tab_result, tab_trace, tab_method = st.tabs(
-    ["📊 结果与依据", "🧭 Agent 轨迹", "📖 方法论"])
+    ["结果与依据", "Agent 轨迹", "方法论"])
 
 with tab_result:
     rows = [{
@@ -269,7 +268,7 @@ with tab_result:
     st.caption("依据由确定性规则直接从原始数据生成（零 LLM），每个数字都可溯源复算。")
     evidence = st.session_state.get("evidence") or evidence_for(result.ranking)
     for i, card in enumerate(evidence):
-        medal = {1: "🥇", 2: "🥈", 3: "🥉"}.get(card["rank"], "📍")
+        medal = {1: "01", 2: "02", 3: "03"}.get(card["rank"], str(card["rank"]).zfill(2))
         with st.expander("{} 第{}名 {} — 总分 {:.2f}".format(
                 medal, card["rank"], card["name"], result.ranking[i]["total"]),
                 expanded=(i == 0)):
@@ -295,7 +294,7 @@ with tab_result:
     st.caption("案例来源：**{}**。事实请以品牌官方与公开报道为准（已要求可查证锚点）；"
                "市场对照由代码自动计算。".format(mode))
     if snippets:
-        with st.expander("🌐 本次联网抓取的素材（{} 条）".format(len(snippets)), expanded=False):
+        with st.expander("本次联网抓取的素材（{} 条）".format(len(snippets)), expanded=False):
             for s in snippets:
                 st.markdown("- **{}**{}".format(
                     s["title"], (" — " + s["content"][:120]) if s["content"] else ""))
@@ -314,7 +313,7 @@ with tab_result:
                     hit, miss = alignment(c["iso3s"], result.ranking)
                     if hit:
                         names = "、".join(rank_of[m][1] for m in hit)
-                        st.success("✅ 对照：其主攻市场中的 **{}**（{}）落在我们的 Top5".format(
+                        st.success("对照：其主攻市场中的 **{}**（{}）落在我们的 Top5".format(
                             len(hit), names))
                     if miss:
                         parts = "、".join("{}（第{}名）".format(rank_of[m][1], rk)
@@ -340,7 +339,7 @@ with tab_result:
                 hit, miss = alignment(case["markets"], result.ranking)
                 if hit:
                     names = "、".join(rank_of[m][1] for m in hit)
-                    st.success("✅ 对照：其主攻市场中的 **{}**（{}）落在我们本次推荐的 Top5".format(
+                    st.success("对照：其主攻市场中的 **{}**（{}）落在我们本次推荐的 Top5".format(
                         len(hit), names))
                 if miss:
                     parts = "、".join("{}（第{}名）".format(rank_of[m][1], rk)
@@ -353,10 +352,10 @@ with tab_result:
     if result.summary:
         st.markdown(result.summary)
         if result.guard_warnings:
-            st.warning("⚠️ 守卫警告（以下数字未在台账中）：{}".format(result.guard_warnings))
+            st.warning("守卫警告（以下数字未在台账中）：{}".format(result.guard_warnings))
     else:
         st.warning("点评生成失败：{}".format(result.narrative_error or "未知原因"))
-    if st.button("🔄 重新生成点评"):
+    if st.button("重新生成点评"):
         try:
             ok, err = MarketAgent().regen_summary(result)
         except Exception as e:
@@ -398,7 +397,7 @@ with tab_result:
                                    for r in out["ranking"])
                 ans = "**{}子池排名**：{}\n\n{}".format(out["region"], chain, ans)
             if out.get("guard"):
-                ans += "\n\n⚠️ 守卫警告：{}".format(out["guard"])
+                ans += "\n\n守卫警告：{}".format(out["guard"])
         except LlmError as e:
             ans = "LLM 调用失败：{}".format(e)
         st.session_state["msgs"].append({"role": "assistant", "content": ans})

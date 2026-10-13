@@ -3,10 +3,11 @@
 设计语言：深海蓝 #0B3D66 × 罗盘金 #F59E0B，线性图标 1.8px 圆头描边。
 """
 
-NAVY = "#0B3D66"
-BLUE = "#1B6CB0"
-GOLD = "#F59E0B"
-INK = "#1F2937"
+NAVY = "#16324F"
+BLUE = "#1D5C96"
+GOLD = "#C8922A"
+INK = "#1E2530"
+MUTED = "#5C6B7A"
 
 # 每个大类的图标（24×24 viewBox 线性路径）
 CATEGORY_ICONS = {
@@ -96,50 +97,104 @@ def banner_html(icon_name, title, sub, accent=GOLD, bg="#FFF6E5"):
 
 
 def hero_html():
-    """品牌头图：Logo + 标题 + 副标语 + 三个数据徽章。"""
+    """品牌头图：table 布局（对 markdown 容器最稳）+ Logo + 标题 + 三个徽章。"""
     badges = "".join(
-        '<span style="display:inline-flex;align-items:center;gap:6px;background:#E8F0FB;'
-        'border-radius:999px;padding:4px 12px;font-size:0.82rem;color:{navy}">{i}{t}</span>'.format(
-            navy=NAVY, i=icon(n, 15, BLUE), t=t)
-        for n, t in [("globe", "21 个候选市场"), ("rank", "6 维加权评分"),
-                     ("shield", "数字台账核验"), ("globe", "世界银行 · UN Comtrade")])
+        '<span style="display:inline-block;background:#EDF1F6;border-radius:6px;'
+        'padding:3px 10px;font-size:0.8rem;font-weight:500;color:{navy};'
+        'white-space:nowrap;margin-right:8px">{i}&nbsp;{t}</span>'.format(
+            navy=NAVY, i=icon(n, 14, BLUE), t=t)
+        for n, t in [("globe", "21 个候选市场"), ("rank", "六维加权评分"),
+                     ("shield", "数字可溯源")])
     return (
-        '<div style="display:flex;align-items:center;gap:16px;padding:4px 0 10px">{logo}'
-        '<div style="flex:1"><div style="font-size:1.75rem;font-weight:800;color:{navy};'
-        'letter-spacing:0.5px;line-height:1.15">出海罗盘 <span style="font-size:0.95rem;'
-        'color:#8A94A6;font-weight:500">GlobalCompass</span></div>'
-        '<div style="color:#5B6B7C;margin-top:4px">三步选出出海目标市场：'
-        '<b style="color:{gold}">选品类 → 调偏好 → 看依据</b>，'
-        '每一步都有公开数据支撑、可溯源、可复算。</div>'
-        '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">{badges}</div>'
+        '<div style="display:table;width:100%;border-collapse:separate;'
+        'border-spacing:18px 0;margin:0 -18px;padding:6px 0 10px">'
+        '<div style="display:table-cell;width:56px;vertical-align:middle">{logo}</div>'
+        '<div style="display:table-cell;vertical-align:middle">'
+        '<div style="font-size:1.4rem;font-weight:700;color:{navy};'
+        'letter-spacing:-0.3px;line-height:1.25">出海罗盘'
+        '<span style="font-size:0.72rem;color:{muted};font-weight:500;margin-left:10px;'
+        'letter-spacing:2px">GLOBALCOMPASS</span></div>'
+        '<div style="color:{muted};margin-top:4px;font-size:0.9rem">三步选出出海目标市场：'
+        '<b style="color:{ink}">选品类 → 调偏好 → 看依据</b>，每一步都有公开数据支撑。</div>'
+        '<div style="margin-top:9px">{badges}</div>'
         '</div></div>'
-    ).format(logo=logo(60), navy=NAVY, gold=GOLD, badges=badges)
+    ).format(logo=logo(52), navy=NAVY, muted=MUTED, ink=INK, badges=badges)
 
 
 GLOBAL_CSS = """
 <style>
-.block-container {padding-top: 1.4rem; max-width: 1180px;}
+@import url('https://fonts.googleapis.cn/css2?family=Outfit:wght@400;500;600;700&display=swap');
+:root {
+    --ink: #1E2530; --muted: #5C6B7A; --accent: #1D5C96; --navy: #16324F;
+    --line: #E6EAF0; --bg: #F7F8FA;
+}
+html, body, [class*="css"], .stApp, p, span, div, input, button, label, li {
+    font-family: 'Outfit', 'PingFang SC', 'HarmonyOS Sans SC', 'MiSans',
+                 'Source Han Sans SC', 'Noto Sans SC', 'Microsoft YaHei UI', sans-serif;
+}
+.block-container {padding-top: 1.2rem; max-width: 1160px;}
 #MainMenu, footer {visibility: hidden;}
-h1, h2, h3 {letter-spacing: 0.2px;}
+[data-testid="stHeader"], [data-testid="stToolbar"] {display: none !important;}
+[data-testid="stStatusWidget"] {display: none !important;}
+section[data-testid="stSidebar"] > div:first-child {padding-top: 1.2rem;}
+
+/* 排版：克制标题、收紧字距 */
+h1, h2, h3 {letter-spacing: -0.3px; color: var(--ink) !important;}
+p {color: #3D4956;}
+
+/* 按钮：纯色主按钮，物理按压感 */
 .stButton > button {
-    border-radius: 10px; font-weight: 600;
-    transition: transform .05s ease, box-shadow .15s ease;
+    border-radius: 9px; font-weight: 600; border: 1px solid var(--line);
+    background: #fff; color: var(--ink);
+    transition: all .16s cubic-bezier(.16,1,.3,1);
 }
-.stButton > button:hover {box-shadow: 0 2px 10px rgba(11,61,102,.15);}
+.stButton > button:hover {border-color: #C6D2E0; background: #FAFBFD;}
+.stButton > button:active {transform: scale(.985);}
 .stButton > button[kind="primary"] {
-    background: linear-gradient(135deg, #1B6CB0, #0B3D66); border: none; color: #fff;
+    background: var(--accent); border: none; color: #fff;
+    box-shadow: 0 1px 2px rgba(22,50,79,.18);
 }
+.stButton > button[kind="primary"]:hover {
+    background: #17517F; box-shadow: 0 4px 14px rgba(22,50,79,.22);
+}
+.stButton > button[kind="primary"]:active {transform: translateY(1px);}
+
+/* 指标卡：去描边，柔和扩散阴影 */
 [data-testid="stMetric"] {
-    background: #fff; border: 1px solid #E5EAF2; border-radius: 14px;
-    padding: 14px 16px; box-shadow: 0 1px 4px rgba(15,35,60,.05);
+    background: #fff; border: none; border-radius: 14px;
+    padding: 16px 18px 14px;
+    box-shadow: 0 1px 2px rgba(23,37,58,.04), 0 10px 28px -14px rgba(23,37,58,.10);
 }
-[data-testid="stMetricValue"] {color: #0B3D66;}
+[data-testid="stMetricLabel"] p {font-size: .8rem; color: var(--muted) !important;
+    letter-spacing: .2px; font-weight: 500;}
+[data-testid="stMetricValue"] {color: var(--navy) !important; font-weight: 700 !important;}
+
+/* 页签：底部指示线式 */
+[data-testid="stTabs"] [data-baseweb="tab-list"] {gap: 2px; border-bottom: 1px solid var(--line);}
+[data-testid="stTabs"] [data-baseweb="tab"] {
+    border-radius: 8px 8px 0 0; padding: 8px 18px; font-weight: 500; color: var(--muted);
+    background: transparent; border-bottom: 2px solid transparent;
+}
+[data-testid="stTabs"] [aria-selected="true"] {
+    color: var(--navy) !important; font-weight: 700;
+    border-bottom-color: var(--accent) !important;
+}
+
+/* 输入控件统一圆角与描边 */
+[data-testid="stSelectbox"] > div > div,
+[data-testid="stTextInput"] > div > div > input,
+.stNumberInput input {border-radius: 9px; border-color: var(--line);}
+[data-testid="stTextInput"] > div > div > input:focus,
+.stNumberInput input:focus {border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(29,92,150,.10) !important;}
+
+/* 折叠面板与聊天 */
 [data-testid="stExpander"] {
-    border: 1px solid #E5EAF2; border-radius: 12px; background: #fff;
+    border: 1px solid var(--line); border-radius: 12px; background: #fff;
+    box-shadow: 0 1px 2px rgba(23,37,58,.03);
 }
-[data-testid="stDataFrame"] {border-radius: 10px;}
-.stChatMessage {border-radius: 12px;}
-hr {margin: 0.6rem 0;}
+.stChatMessage {border-radius: 12px; border-color: var(--line);}
+[data-testid="stDataFrame"] {border-radius: 10px; overflow: hidden;}
+hr {border-color: var(--line);}
 </style>
 """
 
