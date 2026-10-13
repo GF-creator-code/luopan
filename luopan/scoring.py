@@ -8,11 +8,16 @@ from dataclasses import dataclass
 
 from .config import COUNTRIES
 
-# 评分用 WB 指标；关税不入评分，只在报告风险层提示
+# 评分用 WB 指标；关税/PPP/城镇化不入评分，只在依据卡与风险提示层使用
 WB_KEYS = {
     "purchase_power": "NY.GDP.PCAP.CD",
     "digital": "IT.NET.USER.ZS",
     "logistics": "LP.LPI.OVRL.XQ",
+}
+CONTEXT_KEYS = {
+    "gdp_ppp": "NY.GDP.PCAP.PP.CD",
+    "urban": "SP.URB.TOTL.IN.ZS",
+    "tariff": "TM.TAX.MANF.SM.AR.ZS",
 }
 
 
@@ -77,6 +82,11 @@ def build_features(hs6: str, wb_records, cty_records):
                             if r.get("indicator") == ind and r.get("iso3") == iso3])
             f[key] = v
             f[key + "_year"] = y
+        for key, ind in CONTEXT_KEYS.items():
+            y, v = _latest([(r["year"], r["value"]) for r in wb_records
+                            if r.get("indicator") == ind and r.get("iso3") == iso3])
+            f[key] = v
+            f[key + "_year"] = y
         feats[iso3] = f
     return feats
 
@@ -129,7 +139,8 @@ def score_markets(features, weights=None):
             "total": round(total, 4),
             "sub": {name: round(subs[name][iso3], 3) for name in dims},
             "raw": {k: f[k] for k in ("scale", "scale_year", "china_share", "growth",
-                                      "purchase_power", "digital", "logistics")},
+                                      "purchase_power", "digital", "logistics",
+                                      "gdp_ppp", "urban", "tariff")},
             "imputed": sorted(n for n in dims if iso3 in imputed[n]),
         })
     results.sort(key=lambda r: (-r["total"], r["iso3"]))

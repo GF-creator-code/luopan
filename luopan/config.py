@@ -44,6 +44,37 @@ WB_INDICATORS = {
     "TM.TAX.MANF.SM.AR.ZS": "实施关税均值(制成品%)",
 }
 
+# 上下文指标：只进依据卡与风险提示，不参与评分（保持六维方法论稳定）
+CONTEXT_INDICATORS = {
+    "NY.GDP.PCAP.PP.CD": "人均GDP-PPP(国际元)",
+    "SP.URB.TOTL.IN.ZS": "城镇化率(%)",
+}
+
+# CEPII GeoDist：北京—首都大圆距离（约值，四舍五入到百公里）；RCEP 成员（2022 年生效）
+CEPII = {
+    "JPN": {"distance_km": 2100, "rcep": True},
+    "KOR": {"distance_km": 950, "rcep": True},
+    "AUS": {"distance_km": 8900, "rcep": True},
+    "IDN": {"distance_km": 5300, "rcep": True},
+    "THA": {"distance_km": 3300, "rcep": True},
+    "VNM": {"distance_km": 2300, "rcep": True},
+    "MYS": {"distance_km": 4500, "rcep": True},
+    "PHL": {"distance_km": 2900, "rcep": True},
+    "USA": {"distance_km": 11100, "rcep": False},
+    "CAN": {"distance_km": 10500, "rcep": False},
+    "MEX": {"distance_km": 12500, "rcep": False},
+    "BRA": {"distance_km": 16900, "rcep": False},
+    "DEU": {"distance_km": 7400, "rcep": False},
+    "GBR": {"distance_km": 8100, "rcep": False},
+    "FRA": {"distance_km": 8200, "rcep": False},
+    "NLD": {"distance_km": 7900, "rcep": False},
+    "ITA": {"distance_km": 8100, "rcep": False},
+    "ESP": {"distance_km": 9200, "rcep": False},
+    "IND": {"distance_km": 3800, "rcep": False},
+    "SAU": {"distance_km": 6200, "rcep": False},
+    "ARE": {"distance_km": 5900, "rcep": False},
+}
+
 # 区域约束（追问"只看东南亚"等）；必须覆盖全部 21 个候选市场
 REGIONS = {
     "北美": ["USA", "CAN"],

@@ -20,7 +20,8 @@ def main():
     iso3_all = sorted(config.COUNTRIES)
     wb_records = []
     wb_states = {}
-    for ind, label in config.WB_INDICATORS.items():
+    all_indicators = {**config.WB_INDICATORS, **config.CONTEXT_INDICATORS}
+    for ind, label in all_indicators.items():
         records, state = worldbank.fetch_indicator(ind, iso3_all, *config.WB_YEARS, offline=args.offline)
         wb_states[state] = wb_states.get(state, 0) + 1
         wb_records.extend(records)

@@ -12,6 +12,7 @@ import streamlit as st
 from luopan import cache as _cache
 from luopan import comtrade, config
 from luopan.agent import MarketAgent
+from luopan.cases import alignment, cases_for
 from luopan.charts import radar_small_multiples
 from luopan.explain import evidence_for
 from luopan.llm import LlmError
@@ -211,6 +212,27 @@ with tab_result:
                                       text="{} {:.1f}/10".format(cn, v))
             for reason in card["reasons"]:
                 st.markdown("- " + reason)
+
+    st.markdown("### 真实案例佐证（相近品类/品牌）")
+    st.caption("案例为公开资料整理（公司年报及公开报道，检索 2026-10）；"
+               "「对照」由代码自动计算——案例主攻市场是否落在我们的推荐中。")
+    cases = cases_for(result.profile.hs6) if result.profile else []
+    if not cases:
+        st.info("该品类暂无案例库条目（案例库覆盖扫地机器人/便携咖啡机/家用投影/宠物智能用品）")
+    rank_of = {r["iso3"]: (r["rank"], r["name_zh"]) for r in result.ranking}
+    for case in cases:
+        with st.container(border=True):
+            st.markdown("**{}** · {}".format(case["brand"], case["relation"]))
+            st.markdown(case["facts"])
+            hit, miss = alignment(case["markets"], result.ranking)
+            if hit:
+                names = "、".join(rank_of[m][1] for m in hit)
+                st.success("✅ 对照：其主攻市场中的 **{}**（{}）落在我们本次推荐的 Top5".format(len(hit), names))
+            if miss:
+                parts = "、".join("{}（第{}名）".format(rank_of[m][1], rk)
+                                  for m, rk in miss if rk)
+                if parts:
+                    st.info("ℹ 其余主攻市场：{}".format(parts))
 
     st.markdown("### 分析师点评")
     st.caption("LLM 生成；仅允许引用上表数字，且经数字台账守卫核验。")
