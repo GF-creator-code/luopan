@@ -1,0 +1,432 @@
+{
+ "hs6": "841981",
+ "case_name": "便携咖啡机",
+ "ranking": [
+  {
+   "rank": 1,
+   "iso3": "USA",
+   "name": "美国",
+   "total": 6.9986,
+   "scale_yi": 14.15,
+   "scale_year": 2023,
+   "china_share": 23.6,
+   "growth": 6.7,
+   "gdp_pc": 86170,
+   "sub": {
+    "scale": 10.0,
+    "growth": 1.83,
+    "china_affinity": 5.17,
+    "purchase_power": 10.0,
+    "digital": 8.486,
+    "logistics": 7.5
+   }
+  },
+  {
+   "rank": 2,
+   "iso3": "DEU",
+   "name": "德国",
+   "total": 4.39,
+   "scale_yi": 4.61,
+   "scale_year": 2023,
+   "china_share": 11.8,
+   "growth": 8.9,
+   "gdp_pc": 56104,
+   "sub": {
+    "scale": 3.204,
+    "growth": 2.081,
+    "china_affinity": 1.989,
+    "purchase_power": 6.403,
+    "digital": 8.146,
+    "logistics": 10.0
+   }
+  },
+  {
+   "rank": 3,
+   "iso3": "CAN",
+   "name": "加拿大",
+   "total": 4.2701,
+   "scale_yi": 2.3,
+   "scale_year": 2023,
+   "china_share": 16.2,
+   "growth": 14.7,
+   "gdp_pc": 55016,
+   "sub": {
+    "scale": 1.556,
+    "growth": 2.742,
+    "china_affinity": 3.181,
+    "purchase_power": 6.272,
+    "digital": 8.389,
+    "logistics": 9.167
+   }
+  },
+  {
+   "rank": 4,
+   "iso3": "NLD",
+   "name": "荷兰",
+   "total": 4.2172,
+   "scale_yi": 2.05,
+   "scale_year": 2023,
+   "china_share": 7.9,
+   "growth": 17.1,
+   "gdp_pc": 67465,
+   "sub": {
+    "scale": 1.382,
+    "growth": 3.025,
+    "china_affinity": 0.939,
+    "purchase_power": 7.762,
+    "digital": 9.146,
+    "logistics": 10.0
+   }
+  },
+  {
+   "rank": 5,
+   "iso3": "MYS",
+   "name": "马来西亚",
+   "total": 3.9262,
+   "scale_yi": 0.64,
+   "scale_year": 2023,
+   "china_share": 28.1,
+   "growth": 28.3,
+   "gdp_pc": 11874,
+   "sub": {
+    "scale": 0.379,
+    "growth": 4.31,
+    "china_affinity": 6.38,
+    "purchase_power": 1.111,
+    "digital": 9.435,
+    "logistics": 5.833
+   }
+  },
+  {
+   "rank": 6,
+   "iso3": "ARE",
+   "name": "阿联酋",
+   "total": 3.9251,
+   "scale_yi": 1.14,
+   "scale_year": 2023,
+   "china_share": 7.6,
+   "growth": 25.4,
+   "gdp_pc": 50274,
+   "sub": {
+    "scale": 0.734,
+    "growth": 3.975,
+    "china_affinity": 0.871,
+    "purchase_power": 5.705,
+    "digital": 10.0,
+    "logistics": 9.167
+   }
+  },
+  {
+   "rank": 7,
+   "iso3": "AUS",
+   "name": "澳大利亚",
+   "total": 3.9053,
+   "scale_yi": 0.11,
+   "scale_year": 2023,
+   "china_share": 8.7,
+   "growth": 34.4,
+   "gdp_pc": 64610,
+   "sub": {
+    "scale": 0.0,
+    "growth": 5.013,
+    "china_affinity": 1.166,
+    "purchase_power": 7.42,
+    "digital": 8.896,
+    "logistics": 6.667
+   }
+  },
+  {
+   "rank": 8,
+   "iso3": "SAU",
+   "name": "沙特",
+   "total": 3.7898,
+   "scale_yi": 1.25,
+   "scale_year": 2023,
+   "china_share": 12.8,
+   "growth": 39.9,
+   "gdp_pc": 35528,
+   "sub": {
+    "scale": 0.809,
+    "growth": 5.65,
+    "china_affinity": 2.249,
+    "purchase_power": 3.941,
+    "digital": 10.0,
+    "logistics": 4.167
+   }
+  },
+  {
+   "rank": 9,
+   "iso3": "GBR",
+   "name": "英国",
+   "total": 3.6969,
+   "scale_yi": 3.59,
+   "scale_year": 2023,
+   "china_share": 4.5,
+   "growth": 17.9,
+   "gdp_pc": 53341,
+   "sub": {
+    "scale": 2.475,
+    "growth": 3.117,
+    "china_affinity": 0.031,
+    "purchase_power": 6.072,
+    "digital": 8.708,
+    "logistics": 6.667
+   }
+  },
+  {
+   "rank": 10,
+   "iso3": "ITA",
+   "name": "意大利",
+   "total": 3.5714,
+   "scale_yi": 1.59,
+   "scale_year": 2023,
+   "china_share": 7.9,
+   "growth": 37.8,
+   "gdp_pc": 40430,
+   "sub": {
+    "scale": 1.056,
+    "growth": 5.406,
+    "china_affinity": 0.94,
+    "purchase_power": 4.527,
+    "digital": 6.925,
+    "logistics": 6.667
+   }
+  },
+  {
+   "rank": 11,
+   "iso3": "IDN",
+   "name": "印尼",
+   "total": 3.3774,
+   "scale_yi": 0.5,
+   "scale_year": 2023,
+   "china_share": 41.6,
+   "growth": 32.5,
+   "gdp_pc": 4925,
+   "sub": {
+    "scale": 0.276,
+    "growth": 4.798,
+    "china_affinity": 10.0,
+    "purchase_power": 0.279,
+    "digital": 2.236,
+    "logistics": 0.833
+   }
+  },
+  {
+   "rank": 12,
+   "iso3": "JPN",
+   "name": "日本",
+   "total": 3.2009,
+   "scale_yi": 1.4,
+   "scale_year": 2023,
+   "china_share": 15.7,
+   "growth": 7.5,
+   "gdp_pc": 33797,
+   "sub": {
+    "scale": 0.915,
+    "growth": 1.919,
+    "china_affinity": 3.037,
+    "purchase_power": 3.734,
+    "digital": 5.876,
+    "logistics": 8.333
+   }
+  },
+  {
+   "rank": 13,
+   "iso3": "PHL",
+   "name": "菲律宾",
+   "total": 3.1301,
+   "scale_yi": 0.48,
+   "scale_year": 2023,
+   "china_share": 16.3,
+   "growth": 77.7,
+   "gdp_pc": 3985,
+   "sub": {
+    "scale": 0.259,
+    "growth": 10.0,
+    "china_affinity": 3.204,
+    "purchase_power": 0.167,
+    "digital": 0.662,
+    "logistics": 3.333
+   }
+  },
+  {
+   "rank": 14,
+   "iso3": "ESP",
+   "name": "西班牙",
+   "total": 3.0836,
+   "scale_yi": 1.17,
+   "scale_year": 2023,
+   "china_share": 6.1,
+   "growth": 12.7,
+   "gdp_pc": 35327,
+   "sub": {
+    "scale": 0.754,
+    "growth": 2.516,
+    "china_affinity": 0.461,
+    "purchase_power": 3.917,
+    "digital": 8.79,
+    "logistics": 8.333
+   }
+  },
+  {
+   "rank": 15,
+   "iso3": "KOR",
+   "name": "韩国",
+   "total": 2.9833,
+   "scale_yi": 1.44,
+   "scale_year": 2023,
+   "china_share": 4.4,
+   "growth": 10.5,
+   "gdp_pc": 36239,
+   "sub": {
+    "scale": 0.944,
+    "growth": 2.267,
+    "china_affinity": 0.0,
+    "purchase_power": 4.026,
+    "digital": 9.4,
+    "logistics": 7.5
+   }
+  },
+  {
+   "rank": 16,
+   "iso3": "BRA",
+   "name": "巴西",
+   "total": 2.8649,
+   "scale_yi": 0.69,
+   "scale_year": 2023,
+   "china_share": 10.3,
+   "growth": 55.9,
+   "gdp_pc": 10311,
+   "sub": {
+    "scale": 0.412,
+    "growth": 7.494,
+    "china_affinity": 1.588,
+    "purchase_power": 0.924,
+    "digital": 5.568,
+    "logistics": 2.5
+   }
+  },
+  {
+   "rank": 17,
+   "iso3": "FRA",
+   "name": "法国",
+   "total": 2.8299,
+   "scale_yi": 2.63,
+   "scale_year": 2023,
+   "china_share": 4.5,
+   "growth": -5.5,
+   "gdp_pc": 46103,
+   "sub": {
+    "scale": 1.795,
+    "growth": 0.422,
+    "china_affinity": 0.03,
+    "purchase_power": 5.206,
+    "digital": 6.763,
+    "logistics": 8.333
+   }
+  },
+  {
+   "rank": 18,
+   "iso3": "MEX",
+   "name": "墨西哥",
+   "total": 2.7358,
+   "scale_yi": 1.29,
+   "scale_year": 2023,
+   "china_share": 6.9,
+   "growth": 63.3,
+   "gdp_pc": 13988,
+   "sub": {
+    "scale": 0.84,
+    "growth": 8.338,
+    "china_affinity": 0.676,
+    "purchase_power": 1.364,
+    "digital": 5.186,
+    "logistics": 0.0
+   }
+  },
+  {
+   "rank": 19,
+   "iso3": "IND",
+   "name": "印度",
+   "total": 2.698,
+   "scale_yi": 0.81,
+   "scale_year": 2023,
+   "china_share": 22.1,
+   "growth": 43.2,
+   "gdp_pc": 2592,
+   "sub": {
+    "scale": 0.5,
+    "growth": 6.027,
+    "china_affinity": 4.754,
+    "purchase_power": 0.0,
+    "digital": 0.0,
+    "logistics": 4.167
+   }
+  },
+  {
+   "rank": 20,
+   "iso3": "VNM",
+   "name": "越南",
+   "total": 2.4877,
+   "scale_yi": 0.23,
+   "scale_year": 2023,
+   "china_share": 25.5,
+   "growth": 8.7,
+   "gdp_pc": 4717,
+   "sub": {
+    "scale": 0.081,
+    "growth": 2.057,
+    "china_affinity": 5.683,
+    "purchase_power": 0.254,
+    "digital": 5.479,
+    "logistics": 3.333
+   }
+  },
+  {
+   "rank": 21,
+   "iso3": "THA",
+   "name": "泰国",
+   "total": 1.8827,
+   "scale_yi": 0.51,
+   "scale_year": 2023,
+   "china_share": 13.4,
+   "growth": -9.1,
+   "gdp_pc": 7387,
+   "sub": {
+    "scale": 0.285,
+    "growth": 0.0,
+    "china_affinity": 2.429,
+    "purchase_power": 0.574,
+    "digital": 7.395,
+    "logistics": 5.0
+   }
+  }
+ ],
+ "trend_top5": {
+  "USA": {
+   "2021": 12.413,
+   "2022": 14.983,
+   "2023": 14.145
+  },
+  "DEU": {
+   "2021": 3.884,
+   "2022": 4.512,
+   "2023": 4.609
+  },
+  "CAN": {
+   "2021": 1.746,
+   "2022": 2.172,
+   "2023": 2.296
+  },
+  "NLD": {
+   "2021": 1.495,
+   "2022": 1.61,
+   "2023": 2.051
+  },
+  "MYS": {
+   "2021": 0.391,
+   "2022": 0.572,
+   "2023": 0.643
+  }
+ }
+}
