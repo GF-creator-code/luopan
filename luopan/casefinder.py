@@ -140,7 +140,11 @@ def find_cases_cached(result, price_tier="mid", use_search=True):
         cases = find_cases(result.profile, result.ranking, llm,
                            price_tier=price_tier, search_client=search_client)
     except Exception:
-        return []
+        try:  # LLM/网络偶发抖动，重试一次（WB 同款先例）
+            cases = find_cases(result.profile, result.ranking, llm,
+                               price_tier=price_tier, search_client=search_client)
+        except Exception:
+            return []
     if cases:
         _cache.put("aicases", key,
                    {"hs6": result.profile.hs6, "tier": price_tier}, cases)
