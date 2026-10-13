@@ -17,7 +17,7 @@ from luopan.cases import alignment, cases_for
 from luopan.charts import radar_small_multiples
 from luopan.explain import evidence_for
 from luopan.llm import LlmError
-from luopan.profile import build_profile
+from luopan.profile import build_profile, smart_build_profile
 from luopan.scoring import Weights
 
 st.set_page_config(page_title="出海罗盘", page_icon="🧭", layout="wide",
@@ -159,8 +159,20 @@ if go:
         hs6 = sub_item["hs6"]
         run_text = "{}，{}定位".format(sub_item["name"], tier)
     try:
-        prof = build_profile(run_text, hs6=hs6, price_tier=TIER_CODE[tier],
-                             use_llm=True)
+        if big == OTHER_LABEL:
+            prof, mapinfo = smart_build_profile(run_text, price_tier=TIER_CODE[tier])
+            if mapinfo.get("components"):
+                with st.expander("🧠 AI 拆解匹配过程（{} 个部件）".format(
+                        len(mapinfo["components"])), expanded=True):
+                    if mapinfo.get("rationale"):
+                        st.caption(mapinfo["rationale"])
+                    for comp in mapinfo["components"]:
+                        st.markdown("- **{}** → `{}` — {}".format(
+                            comp["name"], comp["hs6"], comp.get("why", "")))
+                if mapinfo.get("major"):
+                    st.caption("📁 已归位品类目录：**{}**".format(mapinfo["major"]))
+        else:
+            prof = build_profile(run_text, hs6=hs6, price_tier=TIER_CODE[tier])
         if prof is None:
             manual = st.text_input(
                 "AI 未能自动识别该品类：请手填 6 位 HS 编码（可查海关税则，如翻拍/冲洗器材填 901090/901010）",

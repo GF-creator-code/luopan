@@ -1,8 +1,51 @@
 """产品档案与 HS6 映射单测。"""
+import json
+
 import pytest
 
 from luopan import envload
-from luopan.profile import build_profile, lookup_hs6
+from luopan.profile import build_profile, llm_map_product, lookup_hs6, smart_build_profile
+
+
+class _FakeMapLlm:
+    def __init__(self, reply):
+        self.reply = reply
+
+    def chat(self, messages, temperature=0.0, max_tokens=2000):
+        return self.reply
+
+
+def test_llm_map_product_split_and_validate():
+    reply = json.dumps({
+        "components": [{"name": "片夹", "hs6": "901090", "why": "胶片支撑"},
+                       {"name": "冲洗机", "hs6": "901010", "why": "显影核心"}],
+        "primary_hs6": "901010", "major": "摄影与暗房", "rationale": "以冲洗功能为核心",
+    }, ensure_ascii=False)
+    m = llm_map_product("胶片翻拍+冲洗组合设备", llm=_FakeMapLlm(reply))
+    assert m["primary_hs6"] == "901010"
+    assert m["major"] == "摄影与暗房"
+    assert len(m["components"]) == 2
+
+
+def test_llm_map_product_junk_returns_none():
+    assert llm_map_product("hello world", llm=_FakeMapLlm("no json here")) is None
+
+
+def test_smart_build_profile_llm_split():
+    reply = json.dumps({
+        "components": [{"name": "片夹", "hs6": "901090", "why": "x"}],
+        "primary_hs6": "901090", "major": "摄影与暗房", "rationale": "r",
+    }, ensure_ascii=False)
+    prof, info = smart_build_profile("胶片翻拍片夹", llm=_FakeMapLlm(reply))
+    assert prof is not None and prof.matched_by == "llm_split"
+    assert prof.hs6 == "901090"
+    assert prof.hs_name_zh == "胶片翻拍/拷贝器材"  # 从目录树归位取细分名
+    assert info["matched_by"] == "llm_split" and info["components"]
+
+
+def test_smart_build_profile_keyword_first():
+    prof, info = smart_build_profile("便携咖啡机", llm=_FakeMapLlm("不应被调用"))
+    assert info["matched_by"] == "keyword" and prof.hs6 == "841981"
 
 
 def test_load_dotenv(tmp_path, monkeypatch):
