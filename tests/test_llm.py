@@ -54,3 +54,20 @@ def test_chat_all_non_json_exhausts_retries(monkeypatch):
     monkeypatch.setattr("luopan.llm.time.sleep", lambda s: None)
     with pytest.raises(LlmError):
         _client().chat([{"role": "user", "content": "hi"}])
+
+
+SSE_BODY = (
+    'data: {"id":"x","object":"chat.completion.chunk","choices":[{"index":0,'
+    '"delta":{"content":"你"},"finish_reason":null}]}\n\n'
+    'data: {"id":"x","object":"chat.completion.chunk","choices":[{"index":0,'
+    '"delta":{"content":"好"},"finish_reason":"stop"}]}\n\n'
+    'data: [DONE]\n\n'
+)
+
+
+def test_chat_parses_buffered_sse(monkeypatch):
+    """网关把流式协议整体返回时，按 SSE 拼出完整内容（实测 OneTop 高负载行为）。"""
+    monkeypatch.setattr("luopan.llm.requests.post",
+                        lambda *a, **k: _FakeResp(200, SSE_BODY, None))
+    monkeypatch.setattr("luopan.llm.time.sleep", lambda s: None)
+    assert _client().chat([{"role": "user", "content": "hi"}]) == "你好"

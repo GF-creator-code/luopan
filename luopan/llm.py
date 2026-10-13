@@ -1,4 +1,9 @@
-"""OpenAI-compatible LLM client（.env / 环境变量注入，密钥不落代码不落 git）。"""
+"""OpenAI-compatible LLM client（.env / 环境变量注入，密钥不落代码不落 git）。
+
+兼容两类响应：标准 JSON，以及网关在缓冲模式下把流式协议整体返回的
+SSE 文本（`data: {...}` 逐块拼接）——实测 OneTop 高负载时会触发。
+"""
+import json
 import os
 import time
 
@@ -9,6 +14,29 @@ from . import envload
 
 class LlmError(RuntimeError):
     pass
+
+
+def _parse_sse_content(text):
+    """从 SSE 文本中拼接 content/delta.content；解析不出返回空串。"""
+    parts = []
+    for line in (text or "").splitlines():
+        line = line.strip()
+        if not line.startswith("data:"):
+            continue
+        chunk = line[5:].strip()
+        if not chunk or chunk == "[DONE]":
+            continue
+        try:
+            obj = json.loads(chunk)
+        except ValueError:
+            continue
+        for ch in (obj.get("choices") or []):
+            delta = ch.get("delta") or {}
+            msg = ch.get("message") or {}
+            piece = delta.get("content") or msg.get("content") or ""
+            if piece:
+                parts.append(piece)
+    return "".join(parts)
 
 
 class LlmClient:
@@ -23,7 +51,7 @@ class LlmClient:
 
     def chat(self, messages, temperature=0.0, max_tokens=2000):
         headers = {"Authorization": "Bearer " + self.key, "Content-Type": "application/json"}
-        payload = {"model": self.model, "messages": messages,
+        payload = {"model": self.model, "messages": messages, "stream": False,
                    "temperature": temperature, "max_tokens": max_tokens}
         last = None
         for wait in (0, 3, 9):  # 401/400 等客户端错立即抛出，只对网络/限流重试
@@ -42,8 +70,12 @@ class LlmClient:
             try:
                 data = resp.json()
             except ValueError:
-                # 网关抖动/限流时可能返回 HTML 错误页或空包，视为可重试的传输故障
-                last = LlmError("llm 返回非 JSON（网关错误页/空响应）: {}".format(resp.text[:120]))
+                # 网关缓冲模式可能把流式 SSE 整体返回（实测 OneTop）——先按 SSE 解析
+                content = _parse_sse_content(resp.text)
+                if content.strip():
+                    return content
+                last = LlmError("llm 返回非 JSON 也非 SSE（网关错误页/空响应）: {}".format(
+                    resp.text[:120]))
                 continue
             content = ""
             if isinstance(data, dict) and data.get("choices"):
