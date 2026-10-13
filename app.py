@@ -210,7 +210,11 @@ if go:
             if result.ranking else []
         st.session_state["msgs"] = []
         with st.spinner("生成追问建议…"):
-            st.session_state["quick_qs"] = MarketAgent().suggest_questions(result)
+            qs = MarketAgent().suggest_questions(result)
+            st.session_state["quick_qs"] = qs
+            st.session_state["quick_qs_fallback"] = (
+                qs == ["如果只看东南亚还有哪些机会？", "第一名和第二名对比一下，选哪个？",
+                       "中国份额是什么意思？"])
     except LlmError as e:
         st.error("LLM 调用失败：{}".format(e))
 
@@ -373,6 +377,8 @@ with tab_result:
     QUICK = st.session_state.get("quick_qs") or [
         "如果只看东南亚还有哪些机会？", "第一名和第二名对比一下，选哪个？",
         "中国份额是什么意思？"]
+    if st.session_state.get("quick_qs_fallback"):
+        st.caption("（AI 建议生成失败，当前为默认问题；重新点「开始分析」可重试）")
     qcols = st.columns(3)
 
     def _ask(text_q):

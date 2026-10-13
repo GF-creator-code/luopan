@@ -221,7 +221,8 @@ class MarketAgent:
             raw = self._ensure_llm().chat([
                 {"role": "system", "content": "你是出海顾问。基于评分结果设计 3 个用户最可能"
                                               "追问的短问题：每个不超过 18 个字，要具体到结果里"
-                                              "的市场名、数字或维度，不要泛泛而谈。"
+                                              "的市场名、数字或维度，不要泛泛而谈；只能设计用评分数据本身"
+                                              "能回答的问题（不要问定价、汇率等数据外信息）。"
                                               "只输出 JSON 字符串数组，不要其他文字。"},
                 {"role": "user", "content": "产品：{}\nTop3：{}".format(result.text, top3)},
             ], max_tokens=4000).strip()
