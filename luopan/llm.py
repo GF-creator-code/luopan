@@ -39,5 +39,11 @@ class LlmClient:
                 last = LlmError("llm http {}: {}".format(resp.status_code, resp.text[:120]))
                 continue
             resp.raise_for_status()
-            return resp.json()["choices"][0]["message"]["content"]
+            data = resp.json()
+            content = ""
+            if data.get("choices"):
+                content = (data["choices"][0].get("message") or {}).get("content") or ""
+            if not content.strip():
+                raise LlmError("模型返回空内容（可能 token 上限被推理消耗，或触发安全策略）")
+            return content
         raise LlmError("llm 连续失败: {}".format(last))

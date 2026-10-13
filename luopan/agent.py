@@ -85,6 +85,7 @@ class AgentResult:
     trace: list
     summary: str = None
     guard_warnings: list = field(default_factory=list)
+    narrative_error: str = None
     error: str = None
 
     def to_json(self):
@@ -95,6 +96,7 @@ class AgentResult:
             "trace": self.trace,
             "summary": self.summary,
             "guard_warnings": self.guard_warnings,
+            "narrative_error": self.narrative_error,
             "error": self.error,
         }
 
@@ -183,7 +185,7 @@ class MarketAgent:
              "{} 个市场排序完成，Top1 {}".format(len(ranked), ranked[0]["name_zh"]))
 
         # 5 叙事（台账约束 + 守卫核验）
-        summary, guard_bad = None, []
+        summary, guard_bad, narrative_error = None, [], None
         try:
             facts = _factsheet(ranked, top_n)
             answer = self._ensure_llm().chat([
@@ -196,9 +198,36 @@ class MarketAgent:
             step("narrative", facts,
                  answer + ("" if not guard_bad else "\n[守卫警告] 台账外数字: {}".format(guard_bad)))
         except Exception as e:
+            narrative_error = str(e)
             step("narrative", "-", "LLM 叙事失败（评分结果不受影响）: {}".format(e))
 
-        return AgentResult(text, prof, w, ranked, trace, summary=summary, guard_warnings=guard_bad)
+        return AgentResult(text, prof, w, ranked, trace, summary=summary,
+                           guard_warnings=guard_bad, narrative_error=narrative_error)
+
+    def regen_summary(self, result):
+        """重试生成分析师点评（不重跑评分）；返回 (ok, 错误信息|None)。"""
+        try:
+            self._ensure_llm()
+        except Exception as e:
+            return False, str(e)
+        self._ensure_data()
+        facts = _factsheet(result.ranking, top_n=min(5, len(result.ranking)))
+        try:
+            answer = self._ensure_llm().chat([
+                {"role": "system", "content": SYSTEM_ANALYST},
+                {"role": "user", "content": "产品：{}\nHS编码：{}\n评分结果:\n{}\n请用3-4句点评Top格局，并点名最有潜力的1个市场及理由。".format(
+                    result.text, result.profile.hs6, facts)},
+            ], max_tokens=800).strip()
+        except Exception as e:
+            return False, str(e)
+        result.summary = answer
+        result.guard_warnings = guard_check(
+            answer, build_ledger(facts, result.text, result.profile.hs6,
+                                 *(r["total"] for r in result.ranking)))
+        result.narrative_error = None
+        result.trace.append({"step": len(result.trace) + 1, "action": "narrative_retry",
+                             "detail": facts, "observation": answer})
+        return True, None
 
     def followup(self, question, result):
         """追问：区域重排 / 两国对比 / 指标解释 / 台账约束自由问答。"""
