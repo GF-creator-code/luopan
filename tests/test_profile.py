@@ -33,13 +33,13 @@ def test_llm_map_product_junk_returns_none():
 
 def test_smart_build_profile_llm_split():
     reply = json.dumps({
-        "components": [{"name": "片夹", "hs6": "901090", "why": "x"}],
-        "primary_hs6": "901090", "major": "摄影与暗房", "rationale": "r",
+        "components": [{"name": "智能家居网关", "hs6": "851762", "why": "通信中枢"}],
+        "primary_hs6": "851762", "major": "消费电子", "rationale": "r",
     }, ensure_ascii=False)
-    prof, info = smart_build_profile("胶片翻拍片夹", llm=_FakeMapLlm(reply))
+    prof, info = smart_build_profile("出口用智能家居网关", llm=_FakeMapLlm(reply))
     assert prof is not None and prof.matched_by == "llm_split"
-    assert prof.hs6 == "901090"
-    assert prof.hs_name_zh == "胶片翻拍/拷贝器材"  # 从目录树归位取细分名
+    assert prof.hs6 == "851762"
+    assert prof.hs_name_zh == "智能手表/手环"  # 从目录树归位取细分名
     assert info["matched_by"] == "llm_split" and info["components"]
 
 
