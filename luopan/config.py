@@ -75,6 +75,54 @@ CEPII = {
     "ARE": {"distance_km": 5900, "rcep": False},
 }
 
+# 价位段标准：按大类分别设定（零售价口径，美元计价为行业惯例）；
+# 人民币显示按 FX_RATE_CNY 换算（估算汇率，仅用于展示）。
+FX_RATE_CNY = 7.2
+
+PRICE_BANDS = {
+    "厨房与家居电器": {"经济型": (0, 30), "中端": (30, 80), "高端": (80, None)},
+    "家居与照明": {"经济型": (0, 15), "中端": (15, 50), "高端": (50, None)},
+    "餐厨与五金": {"经济型": (0, 10), "中端": (10, 30), "高端": (30, None)},
+    "消费电子": {"经济型": (0, 50), "中端": (50, 150), "高端": (150, None)},
+    "智能宠物": {"经济型": (0, 20), "中端": (20, 60), "高端": (60, None)},
+    "户外与出行": {"经济型": (0, 100), "中端": (100, 400), "高端": (400, None)},
+    "健身与运动": {"经济型": (0, 20), "中端": (20, 60), "高端": (60, None)},
+    "美容与健康": {"经济型": (0, 15), "中端": (15, 60), "高端": (60, None)},
+    "服饰与配件": {"经济型": (0, 10), "中端": (10, 35), "高端": (35, None)},
+    "玩具·游戏·母婴": {"经济型": (0, 15), "中端": (15, 50), "高端": (50, None)},
+    "食品与滋补": {"经济型": (0, 10), "中端": (10, 30), "高端": (30, None)},
+    "汽车与车载": {"经济型": (0, 15), "中端": (15, 50), "高端": (50, None)},
+}
+
+_TIER_ORDER = ("经济型", "中端", "高端")
+
+
+def price_bands_for(big):
+    """返回某大类的价位段标准；未知大类回退消费电子通用口径。"""
+    return PRICE_BANDS.get(big, PRICE_BANDS["消费电子"])
+
+
+def band_label_at(big, price, currency="USD"):
+    """把零售价定位到价位段；价格按所选币种折算为美元后匹配区间。"""
+    usd = price / FX_RATE_CNY if currency == "CNY" else price
+    for label in _TIER_ORDER:
+        lo, hi = price_bands_for(big)[label]
+        if usd >= lo and (hi is None or usd < hi):
+            return label
+    return "中端"
+
+
+def band_range_text(big, label, currency="USD"):
+    """价位段的区间展示文本（按所选币种换算）。"""
+    lo, hi = price_bands_for(big)[label]
+    sym = "¥" if currency == "CNY" else "$"
+    k = FX_RATE_CNY if currency == "CNY" else 1.0
+    lo_s = "{}{:.0f}".format(sym, lo * k)
+    if hi is None:
+        return "{} 以上".format(lo_s)
+    return "{} ~ {}{:.0f}".format(lo_s, sym, hi * k)
+
+
 # 市场中文名 → ISO3（案例发现/追问解析共用）
 NAME_TO_ISO3 = {info["name_zh"]: iso3 for iso3, info in COUNTRIES.items()}
 

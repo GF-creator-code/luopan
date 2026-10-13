@@ -1,7 +1,7 @@
 """品类目录树单测：防 4 位章标题编码回归（曾导致全树不可用）。"""
 import re
 
-from luopan.config import CATEGORY_TREE
+from luopan.config import CATEGORY_TREE, band_label_at, band_range_text
 
 
 def test_all_codes_are_six_digit():
@@ -9,6 +9,22 @@ def test_all_codes_are_six_digit():
         for item in subs:
             assert re.fullmatch(r"\d{6}", item["hs6"]), \
                 "编码必须是 6 位数字: {}/{} -> {}".format(big, item["name"], item["hs6"])
+
+
+def test_price_bands_usd_boundaries():
+    assert band_label_at("厨房与家居电器", 20, "USD") == "经济型"
+    assert band_label_at("厨房与家居电器", 50, "USD") == "中端"
+    assert band_label_at("厨房与家居电器", 100, "USD") == "高端"
+
+
+def test_price_bands_cny_conversion():
+    assert band_label_at("服饰与配件", 300, "CNY") == "高端"   # 300/7.2 ≈ 41.7 ≥ 35
+    assert band_label_at("服饰与配件", 50, "CNY") == "经济型"  # 50/7.2 ≈ 6.9 ≤ 10
+
+
+def test_band_range_text_format():
+    assert band_range_text("消费电子", "中端", "CNY") == "¥360 ~ ¥1080"
+    assert band_range_text("服饰与配件", "高端", "USD") == "$35 以上"
 
 
 def test_names_unique_within_major():

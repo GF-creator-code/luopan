@@ -69,7 +69,6 @@ col_a, col_b = st.columns(2)
 big = col_a.selectbox("大类", list(config.CATEGORY_TREE) + [OTHER_LABEL], key="big_cat")
 if big == OTHER_LABEL:
     sub_item = None
-    tier = col_b.selectbox("价位段", list(TIER_CODE), index=1)
     desc = st.text_area("请描述产品（AI 自动映射 6 位 HS 编码）",
                         key="input_text", height=72,
                         placeholder="例如：空气炸锅，家用大容量")
@@ -79,8 +78,26 @@ else:
         st.session_state.pop("sub_cat", None)  # 大类切换后旧细分失效，回默认
     sub_name = col_b.selectbox("细分品类", sub_names, key="sub_cat")
     sub_item = next(x for x in config.CATEGORY_TREE[big] if x["name"] == sub_name)
-    tier = col_b.selectbox("价位段", list(TIER_CODE), index=1, key="tier_pick")
     desc = st.text_input("补充卖点或约束（可选，用于分析师点评）", key="input_text")
+
+# 价位段：币种 → 参考零售价 → 明确标准（按大类分别设定）
+col_c, col_d = st.columns(2)
+currency = col_c.selectbox("价位标准币种", ["人民币 ¥", "美元 $"], index=0)
+cur_code = "CNY" if currency.startswith("人民币") else "USD"
+price = col_d.number_input("参考零售价（可选，填了自动判定位）",
+                           min_value=0.0, value=0.0, step=10.0)
+tier_big = "消费电子" if big == OTHER_LABEL else big
+if price > 0:
+    tier = config.band_label_at(tier_big, price, cur_code)
+    st.caption("💰 已按零售价自动判定位：**{}**（{}，{} 口径）".format(
+        tier, config.band_range_text(tier_big, tier, cur_code), currency))
+else:
+    tier_opts = ["{}（{}）".format(l, config.band_range_text(tier_big, l, cur_code))
+                 for l in ("经济型", "中端", "高端")]
+    tier = col_d.selectbox("价位段（{} 口径标准）".format(tier_big),
+                           tier_opts, index=1).split("（")[0]
+st.caption("📏 价位标准按「{}」品类分别设定（美元零售价惯例）；人民币显示按 1 USD ≈ {} CNY 换算。".format(
+    tier_big, config.FX_RATE_CNY))
 
 EX_SAMPLES = [("厨房与家居电器", "咖啡机（便携/户外）", "☕ 咖啡机"),
               ("厨房与家居电器", "扫地机器人/吸尘器", "🤖 扫地机器人"),
