@@ -99,6 +99,7 @@ for i, (bn, sn, label) in enumerate(EX_SAMPLES):
 
 region_sel = st.multiselect("② 区域偏好（可多选；不选 = 全球 21 个候选市场）",
                             list(config.REGIONS))
+st.caption("⏳ 未缓存过的细分品类首次分析需实时抓取数据（约 1-2 分钟），之后走缓存。")
 
 
 def _apply_tier(tier_name):
