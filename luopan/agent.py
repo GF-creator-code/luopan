@@ -224,7 +224,7 @@ class MarketAgent:
                                               "的市场名、数字或维度，不要泛泛而谈。"
                                               "只输出 JSON 字符串数组，不要其他文字。"},
                 {"role": "user", "content": "产品：{}\nTop3：{}".format(result.text, top3)},
-            ], max_tokens=800).strip()
+            ], max_tokens=4000).strip()
             m = re.search(r"\[", raw)
             data = json.JSONDecoder().raw_decode(raw[m.start():])[0] if m else []
             qs = [str(x).strip() for x in data if str(x).strip()][:3]
