@@ -215,13 +215,21 @@ with tab_result:
                 st.markdown("- " + reason)
 
     st.markdown("### 案例佐证（AI 发现相近品牌 + 可复制路径）")
-    st.caption("AI 从公开知识/联网检索中寻找与你的品类有共同性的出海品牌，"
-               "说明它如何成功、你如何复制；市场对照由代码自动计算。"
-               "案例事实请以品牌官方与公开报道为准（AI 生成已要求可查证锚点）。")
     tier_now = st.session_state.get("tier", "中端")
     rank_of = {r["iso3"]: (r["rank"], r["name_zh"]) for r in result.ranking}
-    with st.spinner("AI 案例研究员工作中…（首次约 20 秒，同输入结果已缓存不重复调用）"):
-        ai_cases = find_cases_cached(result, tier_now)
+    with st.spinner("AI 案例研究员工作中（联网抓取素材 → 生成案例）…首次约 30 秒，同输入已缓存"):
+        pack = find_cases_cached(result, tier_now)
+    ai_cases, mode = pack["cases"], pack["mode"]
+    snippets = pack.get("snippets", [])
+    st.caption("案例来源：**{}**。事实请以品牌官方与公开报道为准（已要求可查证锚点）；"
+               "市场对照由代码自动计算。".format(mode))
+    if snippets:
+        with st.expander("🌐 本次联网抓取的素材（{} 条）".format(len(snippets)), expanded=False):
+            for s in snippets:
+                st.markdown("- **{}**{}".format(
+                    s["title"], (" — " + s["content"][:120]) if s["content"] else ""))
+                if s["url"]:
+                    st.caption("↳ " + s["url"])
     if ai_cases:
         for c in ai_cases:
             with st.container(border=True):
@@ -248,7 +256,7 @@ with tab_result:
                     st.caption("可查证锚点：" + c["anchors"])
     else:
         st.info("AI 本次未给出案例（宁缺毋滥：没有确信可查证的相近品牌时不硬编）。"
-                "如需联网检索提升案例质量，配置 SEARCH_API_KEY（Tavily）后自动启用。")
+                "联网抓取偶发失败会自动降级知识模式——换个描述再点一次开始分析即可。")
 
     with st.expander("内置精选案例（已人工核对，公开资料检索 2026-10）"):
         curated = cases_for(result.profile.hs6) if result.profile else []
