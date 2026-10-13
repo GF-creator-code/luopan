@@ -124,7 +124,7 @@ class MarketAgent:
         n = len({r.get("reporter") for r in rows if r.get("partner") == 0})
         return n, sorted({r.get("year") for r in rows})
 
-    def run(self, text, weights=None, top_n=5, on_step=None):
+    def run(self, text, weights=None, top_n=5, on_step=None, region_iso3s=None):
         trace = []
 
         def step(action, detail, observation):
@@ -166,10 +166,16 @@ class MarketAgent:
         step("check_data", "hs6={}".format(prof.hs6),
              "{} 个市场有进口数据，年份 {}".format(n_market, years))
 
-        # 4 评分
+        # 4 评分（可选区域过滤：子池内重新归一化）
         feats = build_features(prof.hs6, wb, cty)
+        if region_iso3s:
+            feats = {k: v for k, v in feats.items() if k in set(region_iso3s)}
+            if not feats:
+                return AgentResult(text, prof, w, [], trace,
+                                   error="所选区域内没有候选市场数据")
         ranked = score_markets(feats, w)
-        step("score_markets", "权重 {}".format(_weights_dict(w)),
+        step("score_markets", "权重 {}".format(_weights_dict(w)) +
+             ("，区域子池 {} 市场".format(len(feats)) if region_iso3s else ""),
              "{} 个市场排序完成，Top1 {}".format(len(ranked), ranked[0]["name_zh"]))
 
         # 5 叙事（台账约束 + 守卫核验）
