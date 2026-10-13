@@ -20,6 +20,14 @@
 - LLM：OpenAI-compatible，`LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` 环境变量注入，密钥不落盘
 - 报告 QA：Office COM 导出 PDF/PNG 逐页检查
 
+## 快速体验
+
+```bash
+python -m streamlit run app.py --server.address localhost   # 本机 UI（或双击 run.cmd）
+```
+
+部署到免费云端、Secrets 配置、评审访问码等见 `docs/04_部署与体验.md`。
+
 ## 数据刷新
 
 ```bash
