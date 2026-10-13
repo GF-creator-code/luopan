@@ -92,6 +92,7 @@ def _set_sample(big_name, sub_name):
     st.session_state["sub_cat"] = sub_name
 
 
+st.caption("💡 不知道选什么？点一个示例，会自动帮你填好上面的「大类」和「细分品类」：")
 ex_cols = st.columns(len(EX_SAMPLES))
 for i, (bn, sn, label) in enumerate(EX_SAMPLES):
     ex_cols[i].button(label, key="ex{}".format(i), on_click=_set_sample,
