@@ -8,6 +8,7 @@ import json
 import re
 from dataclasses import asdict, dataclass, field
 
+from .compliance import screen_product
 from .config import CACHE_DIR, COUNTRIES, FIXTURES_DIR, NAME_TO_ISO3, REGIONS
 from .explain import evidence_for
 from .guard import build_ledger, check as guard_check
@@ -96,6 +97,7 @@ class AgentResult:
     summary: str = None
     guard_warnings: list = field(default_factory=list)
     narrative_error: str = None
+    compliance: dict = None
     error: str = None
 
     def to_json(self):
@@ -107,6 +109,7 @@ class AgentResult:
             "summary": self.summary,
             "guard_warnings": self.guard_warnings,
             "narrative_error": self.narrative_error,
+            "compliance": self.compliance,
             "error": self.error,
         }
 
@@ -167,11 +170,23 @@ class MarketAgent:
             if prof is None:
                 step("map_hs_code", text, "校对表与 LLM 均未能确定 HS6，需要用户手选")
                 return AgentResult(text, None, w, None, trace,
-                                   error="无法确定品类，请手选 6 位 HS 编码")
+                                   error="无法确定品类，请手选 6 位 HS 编码",
+                                   compliance=screen_product(text))
             step("map_hs_code", text, "{} → {}（{}，{}）".format(
                 text, prof.hs6, prof.hs_name_zh or "自定义品类", prof.matched_by))
 
-        # 3 数据覆盖
+        # 2.5 合规筛查（红线禁售拒绝评分；高合规管制降级提示）
+        compliance = screen_product(text)
+        if compliance["severity"]:
+            sev = compliance["severity"]
+            step("compliance", sev, compliance["message"])
+            if sev == "refuse":
+                return AgentResult(text, prof, w, None, trace,
+                                   summary=None, guard_warnings=[],
+                                   narrative_error=None,
+                                   error=compliance["message"],
+                                   compliance=compliance)
+            compliance_note = compliance["message"]
         rows = [r for r in cty if r.get("hs6") == prof.hs6]
         if not rows:
             step("check_data", "hs6={}".format(prof.hs6), "本地缓存无该品类数据")
@@ -196,10 +211,12 @@ class MarketAgent:
 
         # 5 叙事（通俗多维度解读；数字仍受台账守卫核验）
         summary, guard_bad, narrative_error = None, [], None
+        compliance, compliance_note = None, None
         try:
             facts = _factsheet(ranked, top_n)
             answer, guard_bad = self._analyst_call(text, prof.hs6, ranked,
-                                                   prof.price_tier, facts)
+                                                   prof.price_tier, facts,
+                                                   compliance_note)
             summary = answer
             step("narrative", facts,
                  answer + ("" if not guard_bad else "\n[守卫警告] 台账外数字: {}".format(guard_bad)))
@@ -208,7 +225,8 @@ class MarketAgent:
             step("narrative", "-", "LLM 叙事失败（评分结果不受影响）: {}".format(e))
 
         return AgentResult(text, prof, w, ranked, trace, summary=summary,
-                           guard_warnings=guard_bad, narrative_error=narrative_error)
+                           guard_warnings=guard_bad, narrative_error=narrative_error,
+                           compliance=compliance)
 
     def suggest_questions(self, result):
         """按本次结果生成 3 个追问建议（每个 ≤18 字，具体到结果里的市场/数字）；
@@ -235,7 +253,8 @@ class MarketAgent:
             qs.append(fallback[len(qs)])
         return qs
 
-    def _analyst_call(self, product_text, hs6, ranked, price_tier, facts):
+    def _analyst_call(self, product_text, hs6, ranked, price_tier, facts,
+                      compliance_note=None):
         """生成通俗多维度点评；返回 (answer, guard_bad)。"""
         evidence = evidence_for(ranked, price_tier or "mid")[:3]
         ev_lines = []
@@ -246,8 +265,10 @@ class MarketAgent:
             {"role": "system", "content": ANALYST_SYSTEM},
             {"role": "user", "content": (
                 "产品：{}\nHS编码：{}\n\n评分数据（数字只能从这里引用）：\n{}\n\n"
-                "数据解读参考（判断可化用，语句自己组织，不要照抄）：\n{}\n\n{}").format(
-                product_text, hs6, facts, "\n".join(ev_lines), _ANALYST_ASK)},
+                "数据解读参考（判断可化用，语句自己组织，不要照抄）：\n{}\n\n"
+                "合规提示（如有，必须放入【要小心什么】并展开说明）：{}\n\n{}").format(
+                product_text, hs6, facts, "\n".join(ev_lines),
+                compliance_note or "无", _ANALYST_ASK)},
         ], max_tokens=6000, timeout=180).strip()
         guard_bad = guard_check(answer, build_ledger(facts, product_text, hs6,
                                                      *(r["total"] for r in ranked)))
@@ -261,9 +282,11 @@ class MarketAgent:
             return False, str(e)
         self._ensure_data()
         facts = _factsheet(result.ranking, top_n=min(5, len(result.ranking)))
+        note = (result.compliance or {}).get("message")
         try:
             answer, bad = self._analyst_call(result.text, result.profile.hs6,
-                                             result.ranking, result.profile.price_tier, facts)
+                                             result.ranking, result.profile.price_tier,
+                                             facts, note)
         except Exception as e:
             return False, "{}: {}".format(type(e).__name__, e)
         result.summary = answer

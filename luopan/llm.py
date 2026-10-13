@@ -88,7 +88,11 @@ class LlmClient:
             if isinstance(data, dict) and data.get("choices"):
                 content = (data["choices"][0].get("message") or {}).get("content") or ""
             if not content.strip():
-                raise LlmError("模型返回空内容（可能 token 上限被推理消耗，或触发安全策略）")
+                # 推理模型可能把预算耗在思考上：预算翻倍重试（上限 16000）
+                if payload["max_tokens"] < 16000:
+                    payload["max_tokens"] = min(payload["max_tokens"] * 2, 16000)
+                last = LlmError("模型返回空内容（推理消耗或安全策略），预算已翻倍重试")
+                continue
             return content
         raise LlmError("连续失败: {}".format(last))
 
