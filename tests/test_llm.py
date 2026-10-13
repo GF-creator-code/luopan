@@ -71,3 +71,28 @@ def test_chat_parses_buffered_sse(monkeypatch):
                         lambda *a, **k: _FakeResp(200, SSE_BODY, None))
     monkeypatch.setattr("luopan.llm.time.sleep", lambda s: None)
     assert _client().chat([{"role": "user", "content": "hi"}]) == "你好"
+
+
+def test_fallback_endpoint_used_when_primary_down(monkeypatch):
+    calls = []
+
+    def fake_post(url, headers=None, json=None, timeout=None):
+        calls.append(url)
+        if "x.example" in url:
+            raise requests.ConnectionError("primary down")
+        return _FakeResp(200, "ok", {"choices": [{"message": {"content": "兜底"}}]})
+
+    monkeypatch.setattr("luopan.llm.requests.post", fake_post)
+    monkeypatch.setattr("luopan.llm.time.sleep", lambda s: None)
+    c = _client()
+    c.fallback = {"base": "https://fallback.example/v1", "key": "k2", "model": "m2"}
+    assert c.chat([{"role": "user", "content": "hi"}]) == "兜底"
+    assert any("fallback.example" in u for u in calls)
+
+
+def test_no_fallback_raises_original(monkeypatch):
+    monkeypatch.setattr("luopan.llm.requests.post",
+                        lambda *a, **k: (_ for _ in ()).throw(requests.ConnectionError("down")))
+    monkeypatch.setattr("luopan.llm.time.sleep", lambda s: None)
+    with pytest.raises(LlmError):
+        _client().chat([{"role": "user", "content": "hi"}])
