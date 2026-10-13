@@ -340,7 +340,22 @@ with tab_result:
 
     st.markdown("### 分析师点评")
     st.caption("LLM 生成；仅允许引用上表数字，且经数字台账守卫核验。")
-    st.markdown(result.summary or "（LLM 叙事失败，但评分结果不受影响）")
+    if result.summary:
+        st.markdown(result.summary)
+        if result.guard_warnings:
+            st.warning("⚠️ 守卫警告（以下数字未在台账中）：{}".format(result.guard_warnings))
+    else:
+        st.warning("点评生成失败：{}".format(result.narrative_error or "未知原因"))
+    if st.button("🔄 重新生成点评"):
+        try:
+            ok, err = MarketAgent().regen_summary(result)
+        except LlmError as e:
+            ok, err = False, str(e)
+        if ok:
+            st.session_state["result"] = result
+            st.rerun()
+        else:
+            st.error("重试失败：{}".format(err))
 
 with tab_trace:
     st.caption("五步执行轨迹全程可见——LLM 只做计划/品类映射/台账内叙事，"
