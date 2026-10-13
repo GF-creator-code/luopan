@@ -9,6 +9,7 @@ import re
 from dataclasses import asdict, dataclass, field
 
 from .config import CACHE_DIR, COUNTRIES, FIXTURES_DIR, NAME_TO_ISO3, REGIONS
+from .explain import evidence_for
 from .guard import build_ledger, check as guard_check
 from .llm import LlmClient
 from .profile import build_profile
@@ -27,9 +28,18 @@ INDICATOR_HELP = {
     "关税": "评分未纳入关税；报告风险层引用世界银行制成品实施关税均值做提示， precise 税率需按目的国税则查询。",
 }
 
-SYSTEM_ANALYST = ("你是出海市场分析师。直接输出点评正文，第一句就是结论；不要展示思考或分析过程，"
-                  "不要解释你将做什么。只允许使用用户材料中出现过的数字，禁止编造、推算或"
-                  "引入材料外数字（包括对材料数字做加减乘除得到的新数字）。语言简洁。")
+ANALYST_SYSTEM = ("你是面向中小外贸卖家的资深出海顾问，语言要通俗——像有经验的老手在给朋友讲解，"
+                  "而不是念数据报告。两条规则：①材料中出现的数字可以引用，但禁止编造、推算或引入"
+                  "材料外的数字（包括对材料数字做四则运算得到的新数字）；②你的核心价值是『解读』——"
+                  "说明数字背后意味着什么、对卖家有什么影响、具体该怎么做。输出简体中文，"
+                  "按要求的结构分节，每节以【】小标题开头，第一句先给结论。")
+
+_ANALYST_ASK = ("请面向一位准备出海的中小卖家，用通俗语言从多个维度讲解：\n"
+                "【结论】先一句话说清最值得先进入的市场和为什么；\n"
+                "【这个市场好在哪】从规模、增长、渠道接受度、购买力等维度展开——"
+                "每个维度先说数据说明什么，再说对卖家的实际意义；\n"
+                "【要小心什么】基于数据里的短板或风险，给 1-2 个务实提醒；\n"
+                "【建议第一步】给一个具体、可执行的动作建议。")
 
 
 def _merged_cty_records():
@@ -184,16 +194,12 @@ class MarketAgent:
              ("，区域子池 {} 市场".format(len(feats)) if region_iso3s else ""),
              "{} 个市场排序完成，Top1 {}".format(len(ranked), ranked[0]["name_zh"]))
 
-        # 5 叙事（台账约束 + 守卫核验）
+        # 5 叙事（通俗多维度解读；数字仍受台账守卫核验）
         summary, guard_bad, narrative_error = None, [], None
         try:
             facts = _factsheet(ranked, top_n)
-            answer = self._ensure_llm().chat([
-                {"role": "system", "content": SYSTEM_ANALYST},
-                {"role": "user", "content": "产品：{}\nHS编码：{}\n评分结果（默认权重）:\n{}\n请用3-4句点评Top{}格局，并点名最有潜力的1个市场及理由。".format(
-                    text, prof.hs6, facts, min(top_n, len(ranked)))},
-            ], max_tokens=800).strip()
-            guard_bad = guard_check(answer, build_ledger(facts, text, prof.hs6, *(r["total"] for r in ranked)))
+            answer, guard_bad = self._analyst_call(text, prof.hs6, ranked,
+                                                   prof.price_tier, facts)
             summary = answer
             step("narrative", facts,
                  answer + ("" if not guard_bad else "\n[守卫警告] 台账外数字: {}".format(guard_bad)))
@@ -204,6 +210,24 @@ class MarketAgent:
         return AgentResult(text, prof, w, ranked, trace, summary=summary,
                            guard_warnings=guard_bad, narrative_error=narrative_error)
 
+    def _analyst_call(self, product_text, hs6, ranked, price_tier, facts):
+        """生成通俗多维度点评；返回 (answer, guard_bad)。"""
+        evidence = evidence_for(ranked, price_tier or "mid")[:3]
+        ev_lines = []
+        for card in evidence:
+            for reason in card["reasons"][:4]:
+                ev_lines.append("- {}：{}".format(card["name"], reason))
+        answer = self._ensure_llm().chat([
+            {"role": "system", "content": ANALYST_SYSTEM},
+            {"role": "user", "content": (
+                "产品：{}\nHS编码：{}\n\n评分数据（数字只能从这里引用）：\n{}\n\n"
+                "数据解读参考（判断可化用，语句自己组织，不要照抄）：\n{}\n\n{}").format(
+                product_text, hs6, facts, "\n".join(ev_lines), _ANALYST_ASK)},
+        ], max_tokens=1200).strip()
+        guard_bad = guard_check(answer, build_ledger(facts, product_text, hs6,
+                                                     *(r["total"] for r in ranked)))
+        return answer, guard_bad
+
     def regen_summary(self, result):
         """重试生成分析师点评（不重跑评分）；返回 (ok, 错误信息|None)。"""
         try:
@@ -212,18 +236,10 @@ class MarketAgent:
             return False, str(e)
         self._ensure_data()
         facts = _factsheet(result.ranking, top_n=min(5, len(result.ranking)))
-        try:
-            answer = self._ensure_llm().chat([
-                {"role": "system", "content": SYSTEM_ANALYST},
-                {"role": "user", "content": "产品：{}\nHS编码：{}\n评分结果:\n{}\n请用3-4句点评Top格局，并点名最有潜力的1个市场及理由。".format(
-                    result.text, result.profile.hs6, facts)},
-            ], max_tokens=800).strip()
-        except Exception as e:
-            return False, str(e)
+        answer, bad = self._analyst_call(result.text, result.profile.hs6,
+                                         result.ranking, result.profile.price_tier, facts)
         result.summary = answer
-        result.guard_warnings = guard_check(
-            answer, build_ledger(facts, result.text, result.profile.hs6,
-                                 *(r["total"] for r in result.ranking)))
+        result.guard_warnings = bad
         result.narrative_error = None
         result.trace.append({"step": len(result.trace) + 1, "action": "narrative_retry",
                              "detail": facts, "observation": answer})
@@ -258,7 +274,7 @@ class MarketAgent:
             answer, bad = None, []
             try:
                 answer = self._ensure_llm().chat([
-                    {"role": "system", "content": SYSTEM_ANALYST},
+                    {"role": "system", "content": ANALYST_SYSTEM},
                     {"role": "user", "content": "产品：{}\n仅看{}市场的评分（子池内重新归一化）:\n{}\n用2-3句点评。".format(
                         result.text, region, facts)},
                 ], max_tokens=500).strip()
@@ -281,7 +297,7 @@ class MarketAgent:
             answer, bad = None, []
             try:
                 answer = self._ensure_llm().chat([
-                    {"role": "system", "content": SYSTEM_ANALYST},
+                    {"role": "system", "content": ANALYST_SYSTEM},
                     {"role": "user", "content": "对比这两个市场，给出选择建议：\n{}\n注意：子项分数含义=规模/增速/中国份额/购买力/数字渠道/物流。".format(facts)},
                 ], max_tokens=500).strip()
                 bad = guard_check(answer, build_ledger(facts, result.text))
@@ -302,7 +318,7 @@ class MarketAgent:
         answer, bad = None, []
         try:
             answer = self._ensure_llm().chat([
-                {"role": "system", "content": SYSTEM_ANALYST},
+                {"role": "system", "content": ANALYST_SYSTEM},
                 {"role": "user", "content": "产品：{}\n评分材料:\n{}\n问题：{}".format(result.text, facts, q)},
             ], max_tokens=500).strip()
             bad = guard_check(answer, build_ledger(facts, result.text))

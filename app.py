@@ -339,7 +339,8 @@ with tab_result:
                         st.info("ℹ 其余主攻市场：{}".format(parts))
 
     st.markdown("### 分析师点评")
-    st.caption("LLM 生成；仅允许引用上表数字，且经数字台账守卫核验。")
+    st.caption("通俗多维度解读（结论/好在哪/要小心什么/第一步）；数字只允许来自上表并经台账守卫核验，"
+               "解读观点供决策参考。")
     if result.summary:
         st.markdown(result.summary)
         if result.guard_warnings:
