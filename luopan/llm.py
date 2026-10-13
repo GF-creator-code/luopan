@@ -39,9 +39,14 @@ class LlmClient:
                 last = LlmError("llm http {}: {}".format(resp.status_code, resp.text[:120]))
                 continue
             resp.raise_for_status()
-            data = resp.json()
+            try:
+                data = resp.json()
+            except ValueError:
+                # 网关抖动/限流时可能返回 HTML 错误页或空包，视为可重试的传输故障
+                last = LlmError("llm 返回非 JSON（网关错误页/空响应）: {}".format(resp.text[:120]))
+                continue
             content = ""
-            if data.get("choices"):
+            if isinstance(data, dict) and data.get("choices"):
                 content = (data["choices"][0].get("message") or {}).get("content") or ""
             if not content.strip():
                 raise LlmError("模型返回空内容（可能 token 上限被推理消耗，或触发安全策略）")

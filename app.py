@@ -350,8 +350,8 @@ with tab_result:
     if st.button("🔄 重新生成点评"):
         try:
             ok, err = MarketAgent().regen_summary(result)
-        except LlmError as e:
-            ok, err = False, str(e)
+        except Exception as e:
+            ok, err = False, "{}: {}".format(type(e).__name__, e)
         if ok:
             st.session_state["result"] = result
             st.rerun()

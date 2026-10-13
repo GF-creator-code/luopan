@@ -236,8 +236,11 @@ class MarketAgent:
             return False, str(e)
         self._ensure_data()
         facts = _factsheet(result.ranking, top_n=min(5, len(result.ranking)))
-        answer, bad = self._analyst_call(result.text, result.profile.hs6,
-                                         result.ranking, result.profile.price_tier, facts)
+        try:
+            answer, bad = self._analyst_call(result.text, result.profile.hs6,
+                                             result.ranking, result.profile.price_tier, facts)
+        except Exception as e:
+            return False, "{}: {}".format(type(e).__name__, e)
         result.summary = answer
         result.guard_warnings = bad
         result.narrative_error = None
