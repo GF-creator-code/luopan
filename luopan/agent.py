@@ -124,12 +124,14 @@ class MarketAgent:
         n = len({r.get("reporter") for r in rows if r.get("partner") == 0})
         return n, sorted({r.get("year") for r in rows})
 
-    def run(self, text, weights=None, top_n=5):
+    def run(self, text, weights=None, top_n=5, on_step=None):
         trace = []
 
         def step(action, detail, observation):
             trace.append({"step": len(trace) + 1, "action": action,
                           "detail": detail, "observation": observation})
+            if on_step:
+                on_step(trace[-1])
 
         w = weights or Weights()
         wb, cty = self._ensure_data()

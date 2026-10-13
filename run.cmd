@@ -1,4 +1,4 @@
 @echo off
-rem 一键启动出海罗盘（本机体验入口）
+rem One-click launcher (ASCII only: cmd.exe misreads UTF-8 Chinese comments)
 cd /d "%~dp0"
 python -m streamlit run app.py --server.address localhost --browser.gatherUsageStats false
