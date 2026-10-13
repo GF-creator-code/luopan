@@ -12,6 +12,7 @@ import streamlit as st
 from luopan import cache as _cache
 from luopan import comtrade, config
 from luopan.agent import MarketAgent
+from luopan.casefinder import find_cases_cached
 from luopan.cases import alignment, cases_for
 from luopan.charts import radar_small_multiples
 from luopan.explain import evidence_for
@@ -213,26 +214,60 @@ with tab_result:
             for reason in card["reasons"]:
                 st.markdown("- " + reason)
 
-    st.markdown("### 真实案例佐证（相近品类/品牌）")
-    st.caption("案例为公开资料整理（公司年报及公开报道，检索 2026-10）；"
-               "「对照」由代码自动计算——案例主攻市场是否落在我们的推荐中。")
-    cases = cases_for(result.profile.hs6) if result.profile else []
-    if not cases:
-        st.info("该品类暂无案例库条目（案例库覆盖扫地机器人/便携咖啡机/家用投影/宠物智能用品）")
+    st.markdown("### 案例佐证（AI 发现相近品牌 + 可复制路径）")
+    st.caption("AI 从公开知识/联网检索中寻找与你的品类有共同性的出海品牌，"
+               "说明它如何成功、你如何复制；市场对照由代码自动计算。"
+               "案例事实请以品牌官方与公开报道为准（AI 生成已要求可查证锚点）。")
+    tier_now = st.session_state.get("tier", "中端")
     rank_of = {r["iso3"]: (r["rank"], r["name_zh"]) for r in result.ranking}
-    for case in cases:
-        with st.container(border=True):
-            st.markdown("**{}** · {}".format(case["brand"], case["relation"]))
-            st.markdown(case["facts"])
-            hit, miss = alignment(case["markets"], result.ranking)
-            if hit:
-                names = "、".join(rank_of[m][1] for m in hit)
-                st.success("✅ 对照：其主攻市场中的 **{}**（{}）落在我们本次推荐的 Top5".format(len(hit), names))
-            if miss:
-                parts = "、".join("{}（第{}名）".format(rank_of[m][1], rk)
-                                  for m, rk in miss if rk)
-                if parts:
-                    st.info("ℹ 其余主攻市场：{}".format(parts))
+    with st.spinner("AI 案例研究员工作中…（首次约 20 秒，同输入结果已缓存不重复调用）"):
+        ai_cases = find_cases_cached(result, tier_now)
+    if ai_cases:
+        for c in ai_cases:
+            with st.container(border=True):
+                head = "**{}**".format(c["brand"])
+                if c["origin"]:
+                    head += "（{}）".format(c["origin"])
+                st.markdown(head + " · 共同性：{}".format(c["relation"] or "相近"))
+                st.markdown("**它如何成功**：{}".format(c["how_succeeded"]))
+                st.markdown("**你的复制路径**：{}".format(c["playbook"]))
+                if c["iso3s"]:
+                    hit, miss = alignment(c["iso3s"], result.ranking)
+                    if hit:
+                        names = "、".join(rank_of[m][1] for m in hit)
+                        st.success("✅ 对照：其主攻市场中的 **{}**（{}）落在我们的 Top5".format(
+                            len(hit), names))
+                    if miss:
+                        parts = "、".join("{}（第{}名）".format(rank_of[m][1], rk)
+                                          for m, rk in miss if rk)
+                        if parts:
+                            st.info("ℹ 其余主攻市场：{}".format(parts))
+                if c["markets"]:
+                    st.caption("案例主攻市场：" + "、".join(c["markets"]))
+                if c["anchors"]:
+                    st.caption("可查证锚点：" + c["anchors"])
+    else:
+        st.info("AI 本次未给出案例（宁缺毋滥：没有确信可查证的相近品牌时不硬编）。"
+                "如需联网检索提升案例质量，配置 SEARCH_API_KEY（Tavily）后自动启用。")
+
+    with st.expander("内置精选案例（已人工核对，公开资料检索 2026-10）"):
+        curated = cases_for(result.profile.hs6) if result.profile else []
+        if not curated:
+            st.caption("该品类无内置条目。")
+        for case in curated:
+            with st.container(border=True):
+                st.markdown("**{}** · {}".format(case["brand"], case["relation"]))
+                st.markdown(case["facts"])
+                hit, miss = alignment(case["markets"], result.ranking)
+                if hit:
+                    names = "、".join(rank_of[m][1] for m in hit)
+                    st.success("✅ 对照：其主攻市场中的 **{}**（{}）落在我们本次推荐的 Top5".format(
+                        len(hit), names))
+                if miss:
+                    parts = "、".join("{}（第{}名）".format(rank_of[m][1], rk)
+                                      for m, rk in miss if rk)
+                    if parts:
+                        st.info("ℹ 其余主攻市场：{}".format(parts))
 
     st.markdown("### 分析师点评")
     st.caption("LLM 生成；仅允许引用上表数字，且经数字台账守卫核验。")

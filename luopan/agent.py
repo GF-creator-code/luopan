@@ -8,13 +8,11 @@ import json
 import re
 from dataclasses import asdict, dataclass, field
 
-from .config import CACHE_DIR, COUNTRIES, FIXTURES_DIR, REGIONS
+from .config import CACHE_DIR, COUNTRIES, FIXTURES_DIR, NAME_TO_ISO3, REGIONS
 from .guard import build_ledger, check as guard_check
 from .llm import LlmClient
 from .profile import build_profile
 from .scoring import Weights, build_features, score_markets
-
-NAME_TO_ISO3 = {info["name_zh"]: iso3 for iso3, info in COUNTRIES.items()}
 
 CN_NUM = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
 RANK_REF_RE = re.compile(r"第([一二三四五六七八九十\d]+)名")

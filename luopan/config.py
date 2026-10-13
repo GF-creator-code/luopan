@@ -75,6 +75,9 @@ CEPII = {
     "ARE": {"distance_km": 5900, "rcep": False},
 }
 
+# 市场中文名 → ISO3（案例发现/追问解析共用）
+NAME_TO_ISO3 = {info["name_zh"]: iso3 for iso3, info in COUNTRIES.items()}
+
 # 区域约束（追问"只看东南亚"等）；必须覆盖全部 21 个候选市场
 REGIONS = {
     "北美": ["USA", "CAN"],
