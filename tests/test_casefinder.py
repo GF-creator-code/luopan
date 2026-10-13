@@ -24,7 +24,7 @@ class FakeLlm:
         self.reply = reply
         self.calls = []
 
-    def chat(self, messages, temperature=0.0, max_tokens=2000):
+    def chat(self, messages, temperature=0.0, max_tokens=2000, timeout=None):
         self.calls.append(messages[-1]["content"])
         return self.reply
 

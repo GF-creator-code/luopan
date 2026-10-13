@@ -223,7 +223,7 @@ class MarketAgent:
                 "产品：{}\nHS编码：{}\n\n评分数据（数字只能从这里引用）：\n{}\n\n"
                 "数据解读参考（判断可化用，语句自己组织，不要照抄）：\n{}\n\n{}").format(
                 product_text, hs6, facts, "\n".join(ev_lines), _ANALYST_ASK)},
-        ], max_tokens=3000).strip()
+        ], max_tokens=3000, timeout=180).strip()
         guard_bad = guard_check(answer, build_ledger(facts, product_text, hs6,
                                                      *(r["total"] for r in ranked)))
         return answer, guard_bad

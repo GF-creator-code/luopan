@@ -45,7 +45,7 @@ class LlmClient:
         self.base = (base_url or os.environ.get("LLM_BASE_URL") or "").rstrip("/")
         self.key = api_key or os.environ.get("LLM_API_KEY") or ""
         self.model = model or os.environ.get("LLM_MODEL") or ""
-        self.timeout = timeout
+        self.timeout = timeout or 90
         if not (self.base and self.key and self.model):
             raise LlmError("LLM 未配置：需要 LLM_BASE_URL / LLM_API_KEY / LLM_MODEL（.env 或环境变量）")
         # 备用通道（可选）：主通道全部重试失败后自动切换
@@ -55,7 +55,7 @@ class LlmClient:
         self.fallback = {"base": fb_base, "key": fb_key, "model": fb_model} \
             if (fb_base and fb_key and fb_model) else None
 
-    def _post_chat(self, base, key, model, messages, temperature, max_tokens):
+    def _post_chat(self, base, key, model, messages, temperature, max_tokens, timeout):
         """对一个端点做 3 次退避尝试；成功返回内容，失败抛 LlmError。"""
         headers = {"Authorization": "Bearer " + key, "Content-Type": "application/json"}
         payload = {"model": model, "messages": messages, "stream": False,
@@ -66,7 +66,7 @@ class LlmClient:
                 time.sleep(wait)
             try:
                 resp = requests.post(base + "/chat/completions",
-                                     headers=headers, json=payload, timeout=self.timeout)
+                                     headers=headers, json=payload, timeout=timeout)
             except requests.RequestException as e:
                 last = e
                 continue
@@ -92,17 +92,20 @@ class LlmClient:
             return content
         raise LlmError("连续失败: {}".format(last))
 
-    def chat(self, messages, temperature=0.0, max_tokens=4000):
+    def chat(self, messages, temperature=0.0, max_tokens=4000, timeout=None):
+        # 默认 4000：deepseek-v4-pro 等推理模型会先消耗推理 token 再输出正文；
+        # timeout 可按调用覆盖（长生成如点评/案例给 180s，快调用保持默认 90s）
+        eff_timeout = timeout or self.timeout
         # 默认 4000：deepseek-v4-pro 等推理模型会先消耗推理 token 再输出正文
         try:
             return self._post_chat(self.base, self.key, self.model,
-                                   messages, temperature, max_tokens)
+                                   messages, temperature, max_tokens, eff_timeout)
         except LlmError as primary_err:
             if self.fallback:
                 try:
                     return self._post_chat(self.fallback["base"], self.fallback["key"],
                                            self.fallback["model"], messages,
-                                           temperature, max_tokens)
+                                           temperature, max_tokens, eff_timeout)
                 except LlmError as fb_err:
                     raise LlmError("主通道失败({})；备用通道也失败({})".format(primary_err, fb_err))
             raise

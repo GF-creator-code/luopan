@@ -11,7 +11,7 @@ class _FakeMapLlm:
     def __init__(self, reply):
         self.reply = reply
 
-    def chat(self, messages, temperature=0.0, max_tokens=2000):
+    def chat(self, messages, temperature=0.0, max_tokens=2000, timeout=None):
         return self.reply
 
 
