@@ -230,8 +230,8 @@ m3.metric("首选市场中国份额",
           "{:.1%}".format(top["raw"]["china_share"]) if top["raw"]["china_share"] is not None else "待补")
 m4.metric("已评分市场", "{} 个".format(len(result.ranking)))
 
-tab_result, tab_trace, tab_method, tab_chat = st.tabs(
-    ["📊 结果与依据", "🧭 Agent 轨迹", "📖 方法论", "💬 追问"])
+tab_result, tab_trace, tab_method = st.tabs(
+    ["📊 结果与依据", "🧭 Agent 轨迹", "📖 方法论"])
 
 with tab_result:
     rows = [{
@@ -358,6 +358,43 @@ with tab_result:
         else:
             st.error("重试失败：{}".format(err))
 
+    st.markdown("### 💬 继续追问")
+    st.caption("基于当前评分结果继续提问；回答中的数字同样经台账守卫核验。")
+    if "msgs" not in st.session_state:
+        st.session_state["msgs"] = []
+    QUICK = ["如果只看东南亚还有哪些机会？", "第一名和第二名对比一下，选哪个？",
+             "中国份额是什么意思？"]
+    qcols = st.columns(3)
+
+    def _ask(text_q):
+        st.session_state["pending_q"] = text_q
+
+    for i, qq in enumerate(QUICK):
+        qcols[i].button(qq, key="q{}".format(i), on_click=_ask, args=(qq,),
+                        use_container_width=True)
+    for m in st.session_state["msgs"]:
+        with st.chat_message(m["role"]):
+            st.markdown(m["content"])
+    q = st.session_state.pop("pending_q", None) or st.chat_input("输入追问…")
+    if q:
+        st.session_state["msgs"].append({"role": "user", "content": q})
+        with st.chat_message("user"):
+            st.markdown(q)
+        try:
+            out = MarketAgent().followup(q, result)
+            ans = out["answer"]
+            if out.get("kind") == "rerank_region":
+                chain = " > ".join("{}({})".format(r["name_zh"], r["total"])
+                                   for r in out["ranking"])
+                ans = "**{}子池排名**：{}\n\n{}".format(out["region"], chain, ans)
+            if out.get("guard"):
+                ans += "\n\n⚠️ 守卫警告：{}".format(out["guard"])
+        except LlmError as e:
+            ans = "LLM 调用失败：{}".format(e)
+        st.session_state["msgs"].append({"role": "assistant", "content": ans})
+        with st.chat_message("assistant"):
+            st.markdown(ans)
+
 with tab_trace:
     st.caption("五步执行轨迹全程可见——LLM 只做计划/品类映射/台账内叙事，"
                "评分与排名 100% 确定性代码，可复算。")
@@ -394,40 +431,3 @@ LLM 只负责计划、品类映射与叙事，其输出中的每个数字都要�
 - **购买力**与价位段匹配（高端产品应上调其权重，经济型应下调——试试侧栏的"应用价位建议权重"）；
 - **数字渠道 + 物流**回答"跨境卖货的履约基础行不行"。
 """)
-
-with tab_chat:
-    st.caption("基于当前评分结果继续提问；回答中的数字同样经台账守卫核验。")
-    if "msgs" not in st.session_state:
-        st.session_state["msgs"] = []
-    QUICK = ["如果只看东南亚还有哪些机会？", "第一名和第二名对比一下，选哪个？",
-             "中国份额是什么意思？"]
-    qcols = st.columns(3)
-
-    def _ask(text_q):
-        st.session_state["pending_q"] = text_q
-
-    for i, qq in enumerate(QUICK):
-        qcols[i].button(qq, key="q{}".format(i), on_click=_ask, args=(qq,),
-                        use_container_width=True)
-    for m in st.session_state["msgs"]:
-        with st.chat_message(m["role"]):
-            st.markdown(m["content"])
-    q = st.session_state.pop("pending_q", None) or st.chat_input("输入追问…")
-    if q:
-        st.session_state["msgs"].append({"role": "user", "content": q})
-        with st.chat_message("user"):
-            st.markdown(q)
-        try:
-            out = MarketAgent().followup(q, result)
-            ans = out["answer"]
-            if out.get("kind") == "rerank_region":
-                chain = " > ".join("{}({})".format(r["name_zh"], r["total"])
-                                   for r in out["ranking"])
-                ans = "**{}子池排名**：{}\n\n{}".format(out["region"], chain, ans)
-            if out.get("guard"):
-                ans += "\n\n⚠️ 守卫警告：{}".format(out["guard"])
-        except LlmError as e:
-            ans = "LLM 调用失败：{}".format(e)
-        st.session_state["msgs"].append({"role": "assistant", "content": ans})
-        with st.chat_message("assistant"):
-            st.markdown(ans)
